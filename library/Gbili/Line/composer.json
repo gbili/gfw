@@ -1,0 +1,20 @@
+{
+    "name": "gfw/gbili-line",
+    "description": "Converts strings into lines, capable of spliting lines into more lines",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "gfw",
+        "line"
+    ],
+    "autoload": {
+        "psr-0": {
+            "Gbili\\Line\\": ""
+        }
+    },
+    "target-dir": "Gbili/Line",
+    "require": {
+        "php": ">=5.3.3",
+        "gfw/gbili-stdlib": "self.version",
+        "gfw/gbili-exception": "self.version"
+    }
+}

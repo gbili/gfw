@@ -1,0 +1,21 @@
+{
+    "name": "gfw/gbili-savable",
+    "description": "provides an object to detect mie entity from mie names in different langauges",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "gfw",
+        "savable"
+    ],
+    "autoload": {
+        "psr-0": {
+            "Gbili\\Savable\\": ""
+        }
+    },
+    "target-dir": "Gbili/Savable",
+    "require": {
+        "php": ">=5.3.3",
+        "gfw/gbili-regex": "self.version",
+        "gfw/gbili-exception": "self.version",
+        "gfw/gbili-encoding": "self.version"
+    }
+}

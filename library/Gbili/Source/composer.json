@@ -1,0 +1,21 @@
+{
+    "name": "gfw/gbili-source",
+    "description": "provides an object to detect mie entity from mie names in different langauges",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "gfw",
+        "source"
+    ],
+    "autoload": {
+        "psr-0": {
+            "Gbili\\Source\\": ""
+        }
+    },
+    "target-dir": "Gbili/Source",
+    "require": {
+        "php": ">=5.3.3",
+        "gfw/gbili-db": "self.version",
+        "gfw/gbili-exception": "self.version",
+        "gfw/gbili-url": "self.version"
+    }
+}

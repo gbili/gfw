@@ -1,0 +1,30 @@
+{
+    "name": "gfw/gbili-value",
+    "description": "provides an object to detect mie entity from mie names in different langauges",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "gfw",
+        "value"
+    ],
+    "autoload": {
+        "psr-0": {
+            "Gbili\\Value\\": ""
+        }
+    },
+    "target-dir": "Gbili/Value",
+    "require": {
+        "php": ">=5.3.3",
+        "gfw/gbili-savable": "self.version",
+        "gfw/gbili-db": "self.version",
+        "gfw/gbili-valueslug": "self.version",
+        "gfw/gbili-date": "self.version",
+        "gfw/gbili-miner": "self.version",
+        "gfw/gbili-participant": "self.version",
+        "gfw/gbili-out": "self.version",
+        "gfw/gbili-mie": "self.version",
+        "gfw/gbili-lang": "self.version",
+        "gfw/gbili-source": "self.version",
+        "gfw/gbili-image": "self.version",
+        "gfw/gbili-url": "self.version"
+    }
+}

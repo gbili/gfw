@@ -1,0 +1,22 @@
+{
+    "name": "gfw/gbili-image",
+    "description": "provides an object to detect image entity from image names in different langauges",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "gfw",
+        "image"
+    ],
+    "autoload": {
+        "psr-0": {
+            "Gbili\\Image\\": ""
+        }
+    },
+    "target-dir": "Gbili/Image",
+    "require": {
+        "php": ">=5.3.3",
+        "gfw/gbili-savable": "self.version",
+        "gfw/gbili-exception": "self.version",
+        "gfw/gbili-db": "self.version",
+        "zendframework/zend-servicemanager": ">2.1.3"
+    }
+}

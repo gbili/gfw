@@ -1,0 +1,21 @@
+{
+    "name": "gfw/gbili-sheet",
+    "description": "allows you to split lines into sheets with canvas sizes",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "gfw",
+        "sheet"
+    ],
+    "autoload": {
+        "psr-0": {
+            "Gbili\\Sheet\\": ""
+        }
+    },
+    "target-dir": "Gbili/Sheet",
+    "require": {
+        "php": ">=5.3.3",
+        "gfw/gbili-stdlib": "self.version",
+        "gfw/gbili-exception": "self.version",
+        "gfw/gbili-line": "self.version"
+    }
+}

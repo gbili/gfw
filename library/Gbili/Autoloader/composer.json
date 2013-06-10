@@ -1,0 +1,18 @@
+{
+    "name": "gfw/gbili-autoloader",
+    "description": "Use composer autoloader for e.g. check if a class is reachable, before loading it",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "gfw",
+        "autoloader"
+    ],
+    "autoload": {
+        "psr-0": {
+            "Gbili\\Autoloader\\": ""
+        }
+    },
+    "target-dir": "Gbili/Autoloader",
+    "require": {
+        "php": ">=5.3.3",
+    }
+}

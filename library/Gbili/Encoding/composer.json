@@ -1,0 +1,18 @@
+{
+    "name": "gfw/gbili-encoding",
+    "description": "provides an object to detect encoding entity from encoding names in different langauges",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "gfw",
+        "encoding"
+    ],
+    "autoload": {
+        "psr-0": {
+            "Gbili\\Encoding\\": ""
+        }
+    },
+    "target-dir": "Gbili/Encoding",
+    "require": {
+        "php": ">=5.3.3"
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "name": "gfw/gbili-time",
+    "description": "provides an object to detect mie entity from mie names in different langauges",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "gfw",
+        "time"
+    ],
+    "autoload": {
+        "psr-0": {
+            "Gbili\\Time\\": ""
+        }
+    },
+    "target-dir": "Gbili/Time",
+    "require": {
+        "php": ">=5.3.3",
+        "gfw/gbili-regex": "self.version",
+        "gfw/gbili-exception": "self.version",
+    }
+}

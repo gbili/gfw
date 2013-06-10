@@ -1,0 +1,29 @@
+{
+    "name": "gfw/gbili-miner",
+    "description": "this project has no description whatsoever",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "gfw"
+    ],
+    "autoload": {
+        "psr-0": {
+            "Gbili\\Miner\\": ""
+        }
+    },
+    "target-dir": "Gbili/Miner",
+    "require": {
+        "php": ">=5.3.3",
+        "zendframework/zend-servicemanager": ">=2.2.0", 
+        "zendframework/zend-eventmanager": ">=2.2.0", 
+        "gfw/gbili-savable": "self.version",
+        "gfw/gbili-out": "self.version",
+        "gfw/gbili-exception": "self.version",
+        "gfw/gbili-db": "self.version",
+        "gfw/gbili-regex": "self.version",
+        "gfw/gbili-url": "self.version",
+        "gfw/gbili-encoding": "self.version",
+        "gfw/gbili-slug": "self.version",
+        "gfw/gbili-stdlib": "self.version",
+        "gfw/gbili-autoloader": "self.version"
+    }
+}

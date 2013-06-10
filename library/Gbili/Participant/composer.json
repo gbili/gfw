@@ -1,0 +1,24 @@
+{
+    "name": "gfw/gbili-participant",
+    "description": "provides an object to detect mie entity from mie names in different langauges",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "gfw",
+        "participant"
+    ],
+    "autoload": {
+        "psr-0": {
+            "Gbili\\Participant\\": ""
+        }
+    },
+    "target-dir": "Gbili/Participant",
+    "require": {
+        "php": ">=5.3.3",
+        "gfw/gbili-savable": "self.version",
+        "gfw/gbili-mie": "self.version",
+        "gfw/gbili-video": "self.version",
+        "gfw/gbili-exception": "self.version",
+        "gfw/gbili-db": "self.version",
+        "gfw/gbili-slug": "self.version"
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "name": "gfw/gbili-out",
+    "description": "echo with level control",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "gfw",
+        "out"
+    ],
+    "autoload": {
+        "psr-0": {
+            "Gbili\\Out\\": ""
+        }
+    },
+    "target-dir": "Gbili/Out",
+    "require": {
+        "php": ">=5.3.3",
+        "gfw/gbili-exception": "self.version"
+    }
+}

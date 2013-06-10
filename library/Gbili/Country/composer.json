@@ -1,0 +1,22 @@
+{
+    "name": "gfw/gbili-country",
+    "description": "provides an object to detect country entity from country names in different langauges",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "gfw",
+        "country"
+    ],
+    "autoload": {
+        "psr-0": {
+            "Gbili\\Country\\": ""
+        }
+    },
+    "target-dir": "Gbili/Country",
+    "require": {
+        "php": ">=5.3.3",
+        "gfw/gbili-savable": "self.version",
+        "gfw/gbili-db": "self.version",
+        "gfw/gbili-exception": "self.version",
+        "gfw/gbili-lang": "self.version"
+    }
+}

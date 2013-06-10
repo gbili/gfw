@@ -1,0 +1,54 @@
+{
+    "name": "gbili/gfw",
+    "description": "Gbili Framework",
+    "type": "library",
+    "keywords": [
+      "framework",
+      "gfw"
+    ],
+    "repositories": [
+        {
+            "type":"vcs",
+            "url":"https://github.com/gbili/gfw"
+        }
+    ],
+    "authors": [
+        {
+            "name": "gbili",
+            "email": "dev.guillermo@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.2.3",
+        "zendframework/zend-eventmanager": ">2.1.3"
+    },
+    "autoload": {
+        "psr-0": {"Gbili": "library/"}
+    },
+    "replace": {
+    	"gfw/gbili-country": "self.version",
+    	"gfw/gbili-date": "self.version",
+        "gfw/gbili-db": "self.version",
+        "gfw/gbili-encoding": "self.version",
+        "gfw/gbili-exception": "self.version",
+        "gfw/gbili-file": "self.version",
+        "gfw/gbili-image": "self.version",
+        "gfw/gbili-lang": "self.version",
+        "gfw/gbili-mie": "self.version",
+        "gfw/gbili-miner": "self.version",
+        "gfw/gbili-navigation": "self.version",
+        "gfw/gbili-out": "self.version",
+        "gfw/gbili-participant": "self.version",
+        "gfw/gbili-regex": "self.version",
+        "gfw/gbili-savable": "self.version",
+        "gfw/gbili-slug": "self.version",
+        "gfw/gbili-source": "self.version",
+        "gfw/gbili-time": "self.version",
+        "gfw/gbili-topic": "self.version",
+        "gfw/gbili-url": "self.version",
+        "gfw/gbili-value": "self.version",
+        "gfw/gbili-valueslug": "self.version",
+        "gfw/gbili-vid": "self.version",
+        "gfw/gbili-video": "self.version"
+    }
+}
