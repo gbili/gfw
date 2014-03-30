@@ -1,9 +1,6 @@
 <?php
 namespace Gbili\Db\Req;
 
-use Gbili\Db\DbInterface,
-    PDO;
-
 /**
  * This class is used as a placeholder
  * for the Db adapter plus it forces
@@ -13,7 +10,7 @@ use Gbili\Db\DbInterface,
  *
  */
 abstract class AbstractReq
-implements DbInterface
+implements \Gbili\Db\DbInterface
 {
 	/**
 	 * The name of the prefixed adapter
@@ -48,6 +45,34 @@ implements DbInterface
 	 * @var unknown_type
 	 */
 	private $tableName = null;
+
+    /**
+     * Array of token to value to be used
+     * as parameters
+     * @var array
+     */
+    protected $parameters = array();
+
+    /**
+     * Avoid parameter names collisions
+     *
+     */
+    protected $canonicalParameterNamesInUse=array();
+
+    /**
+     * Sql being executed
+     * @var string
+     */
+    protected $sql;
+
+    /**
+     * In a SELECT t.field AS key FROM ...
+     * array('key' => 't.field')
+     * They allow to use the keys instead of
+     * the fields when building the criteria
+     * array.
+     */
+    protected $keyedFields = array();
 	
 	/**
 	 * Forces class to have adapter
@@ -63,9 +88,10 @@ implements DbInterface
 		if (null !== $useDifferentPrefixedAdapter) {
 			$this->instanceAdapterPointer = self::getPrefixedAdapter($useDifferentPrefixedAdapter);
 		}
-		$this->getAdapter()->setAttribute(PDO::MYSQL_ATTR_INIT_COMMAND, "SET NAMES 'utf8'");
+
+        $this->setKeyedFields($this->loadKeyedFields());
 	}
-	
+
 	/**
 	 * 
 	 * @param unknown_type $name
@@ -134,7 +160,6 @@ implements DbInterface
 	 */
 	public static function getPrefixedAdapter($prefix)
 	{
-	    echo 'prefixed adpater prefix looks like this:' . $prefix . "\n";
 		if (isset(self::$adapter[$prefix])) {
 			return self::$adapter[$prefix];
 		}
@@ -190,6 +215,40 @@ implements DbInterface
 		}
 		return $this->instanceAdapterPointer;
 	}
+
+    /**
+     * Create an adapter from an options array
+     */
+    public static function generateAdapter(array $options)
+    {
+        if (isset($options['db_req'])) {
+            $options = $options['db_req'];
+        }
+        $missingKeys = array_diff(array('driver_class', 'driver_options', 'dsn', 'driver_params'), array_keys($options));
+        if (!empty($missingKeys)) {
+            throw new Exception('Missing options keys : ' . print_r($missingKeys, true));
+        }
+
+        $driverClass   = $options['driver_class'];
+        $driverOptions = $options['driver_options'];
+        $dsn           = $options['dsn'];
+        $driverParams  = $options['driver_params'];
+
+        $missingKeys = array_diff(array('username', 'password'), array_keys($driverParams));
+        if (!empty($missingKeys)) {
+            throw new Exception('Missing options keys : ' . print_r($missingKeys, true));
+        }
+        $username      = $driverParams['username'];
+        $password      = $driverParams['password'];
+
+        $instance      = new $driverClass($dsn, $username, $password, $driverOptions);
+        
+        if (isset($options['adapter_prefix'])) {
+            self::setPrefixedAdapter($instance, $options['adapter_prefix']);
+        } else {
+            self::setAdapter($instance);
+        }
+    }
 	
 	/**
 	 * 
@@ -236,13 +295,38 @@ implements DbInterface
 	 * @param array $values an array mapping each variable key in $sql to a value 
 	 * @return false | array
 	 */
-	public function getResultSet($sql, array $values = array(), $fetchMode = PDO::FETCH_ASSOC)
+	public function getResultSet($sql, array $values = array(), $fetchMode = \PDO::FETCH_ASSOC)
 	{
+        $this->setSql($sql);
+
+        if (empty($values) && $this->hasParameters()) {
+            $values = $this->getParameters();
+        }
 		$pdoStmt = $this->prepareAndExecuteStatement($sql, $values);
-		if ($pdoStmt->rowCount() === 0) {
-			return false;
-		}
 		return $pdoStmt->fetchAll($fetchMode);
+	}
+
+    /**
+     * Adds a where clause if there is a critera array and returns
+     * the result
+     *
+     * @TODO this is messed up, the resultset should be an object that holds records
+     * and the sql and the parameters, they should defeinetely not be kept here since
+     * it messes up the query for the next getResultSet call (because paramters are not
+     * removed after the query)
+     *
+     * @param string $baseSql sql string without the WITH clause
+     * @param array $criteria critera array to be converted to sql string
+     * @see criteriaToString
+     */
+	protected function getResultSetByCriteria($baseSql, array $criteria = array(), $trailingSql = '')
+	{
+         if (empty($criteria)) {
+             return $this->getResultSet($baseSql);
+         }
+         $sql = "$baseSql WHERE " . $this->criteriaToString($this->getKeyedFields(), $criteria) . " $trailingSql";
+         $resultSet =  $this->getResultSet($sql, $this->getParameters()); 
+         return $resultSet;
 	}
 	
 	/**
@@ -284,4 +368,168 @@ implements DbInterface
 		return (is_array($res))? $res[0][(string) $idColumnName] : false;
 	}
 
+    /**
+     * Converts a criteria array to an SQL criteria string
+     * @param array $criteria array(
+     *                            'or' => array(
+     *                                 $fieldKey1 => array('=' => $value1),
+     *                                 $fieldKey2 => array('like' => $value2),
+     *                                 'and' => array(
+     *                                      $fieldKey3 => array('>=' => $value3),
+     *                                      $fieldKey4 => array('<=' => $value4),
+     *                                 ),
+     *                            ),
+     *                        );
+     * The criteria array would be converted to a string:
+     *     ( $fieldKey1 = $value1 or $fieldKey2 like $value2 or ($fieldKey3 >= $value3 and $fieldKey4 <= $value4 )
+     */
+    public function criteriaToString(array $keyToField, array $criteria)
+    {
+        $operator = null;
+        if (isset($criteria['and'])) {
+            $operator = 'and';
+        }
+        if (isset($criteria['or'])) {
+            if (null !== $operator) {
+                throw new \Exception('One boolean comparison operator per criteria array level');
+            }
+            $operator = 'or';
+        }
+        if (null === $operator) {
+            if (1 < count($criteria)) {
+                throw new \Exception('If there are more than one operations, there must be a boolan operator');
+            }
+            return $this->conditionToString($keyToField, current($criteria));
+        }
+
+        $conditions = array();
+        $conditionGroup = $criteria[$operator];
+        foreach ($conditionGroup as $k => $condition) {
+            if (is_string($k) && is_array($condition)) {
+                $subOperator = $k;
+                $subConditionGroup = $condition;
+                $conditions[] = $this->criteriaToString($keyToField, array($subOperator => $subConditionGroup));
+                continue;
+            }
+            $conditions[] = $this->conditionToString($keyToField, $condition);
+        }
+
+        if (1 === count($conditions)) {
+            return current($conditions);
+        }
+        return '( ' . implode( ' ' . $operator . ' ', $conditions) . ' )';
+    }
+
+    public function conditionToString(array $keyToField, array $condition)
+    {
+        $fieldKey = key($condition); 
+        if (!isset($keyToField[$fieldKey])) {
+            throw new \Exception("The field key: $fieldKey, specified in operation, is not set in \$keyToField : " . print_r($keyToField, true) . ' condition : ' . print_r($condition, true));
+        }
+        $field     = $keyToField[$fieldKey];
+        $condition = current($condition);
+        $operator  = key($condition);
+        $operand   = $condition[$operator];
+
+        $parameterIdentifier = $this->addParameter(":$fieldKey", $operand);
+
+        return "$field $operator $parameterIdentifier";
+    }
+
+    public function addParameter($name, $value)
+    {
+        if (!isset($this->canonicalParameterNamesInUse[$name])) {
+            $this->canonicalParameterNamesInUse[$name] = 0;
+            $this->parameters[$name] = $value;
+            return $name;
+        }
+        $count = ++$this->canonicalParameterNamesInUse[$name];
+        return $this->addParameter("$name$count", $value);
+    }
+
+    public function clearParameters()
+    {
+        $this->parameters = array();
+        return $this;
+    }
+
+    public function hasParameters()
+    {
+        return !empty($this->parameters);
+    }
+
+    public function hasParameter($name)
+    {
+        return isset($this->parameters[$name]);
+    }
+
+    public function getParameters()
+    {
+        return $this->parameters;
+    }
+
+    public function getSql()
+    {
+        return $this->sql;
+    }
+
+    public function setSql($sql)
+    {
+        $this->sql = $sql;
+        return $this;
+    }
+
+    public function addKeyedField($asKey, $fieldName, $override = false)
+    {
+        if (false === $override && isset($this->keyFields[$asKey]) && $fieldName !== $this->keyFields[$asKey]) {
+            throw new \Exception("Trying to override existing asKey, but not allowed. To enforce this, pass boolean true to third param. Existing $asKey:{$this->keyedFields[$asKey]}, new is $fieldName");
+        }
+        $this->keyedFields[(string) $asKey] = (string) $fieldName;
+        return $this;
+    }
+
+    public function setKeyedFields(array $keysToFields)
+    {
+        foreach ($keysToFields as $asKey => $fieldName) {
+            $this->addKeyedField($asKey, $fieldName);
+        }
+        return $this;
+    }
+
+    public function getKeyedFields()
+    {
+        return $this->keyedFields;
+    }
+
+    /**
+     * From $this->keyedFields array it builds a string like this:
+     * ' field AS key, field2 AS key ' ...
+     * If $this->keyedFields is emtpy it returns ' * ': all sql token
+     *
+     * @param $narrowKeys, set which keys you want to include in select
+     * @return string 
+     */
+    public function getFieldAsKeyString(array $narrowKeys = array())
+    {
+        $keyedFields = $this->getKeyedFields();
+
+        if (!empty($narrowKeys)) {
+            $keyedFields = array_intersect_key($keyedFields, array_flip($narrowKeys));
+        }
+
+        if (empty($keyedFields)) {
+            return ' * ';
+        }
+        $fieldsAsKeys = array();
+        foreach ($keyedFields as $key => $fieldName) {
+            $fieldsAsKeys[] = "$fieldName AS $key";
+
+        }
+        return ' ' . implode(",\n ", $fieldsAsKeys) . "\n ";
+    }
+
+    public function loadKeyedFields()
+    {
+        return array();
+    }
 }
