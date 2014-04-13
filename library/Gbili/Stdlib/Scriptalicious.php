@@ -81,7 +81,7 @@ class Scriptalicious
             } else if (isset($this->scripts[self::RENDER_TYPE_REFERENCED][$identifier])) {
                 $scriptHtml = '<script type="text/javascript" src="' . $this->scripts[self::RENDER_TYPE_REFERENCED][$identifier] . '"></script>';
             } else {
-                throw new \Exception("Bad call to addDependency(myscript_depends_on, $identifier). The script identifier $identifier does not exist. Grep it and rename the dependency to an existing script");
+                throw new \Exception("Bad call to addDependency(myscript_depends_on, $identifier). The script identifier $identifier does not exist. Grep it and rename the dependency to an existing script: " . print_r($this->scripts, true) . '</br>dependencies:' . print_r($this->dependencyManager->getOrdered()));
             }
             if (isset($this->conditions[$identifier])) {
                 $scriptHtml = "<!--[if {$this->conditions[$identifier]}]>$scriptHtml<![endif]-->";
