@@ -83,7 +83,7 @@ class Scriptalicious
             } else {
                 throw new \Exception("Bad call to addDependency(myscript_depends_on, $identifier). The script identifier $identifier does not exist. Grep it and rename the dependency to an existing script");
             }
-            if (isset($this->conditions[$identifier]) {
+            if (isset($this->conditions[$identifier])) {
                 $scriptHtml = "<!--[if {$this->conditions[$identifier]}]>$scriptHtml<![endif]-->"
             }
             $scripts[] = $scriptHtml;
