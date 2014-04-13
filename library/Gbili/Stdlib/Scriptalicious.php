@@ -53,7 +53,7 @@ class Scriptalicious
     public function setCondition($condition, $scriptIdentifier=null)
     {
         if (null !== $scriptIdentifier) {
-            if ($this->dependencyManager->hasIdentifier($scriptIdentifier))) {
+            if ($this->dependencyManager->hasIdentifier($scriptIdentifier)) {
                 throw new \Exception('Referenced identifier does not exist' . $scriptIdentifier);
             }
         } else if (null !== $this->lastCallIdentifier) {
