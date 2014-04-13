@@ -63,6 +63,7 @@ class Scriptalicious
         }
 
         $this->conditions[$scriptIdentifier] = $condition;
+        return $this;
     }
 
     public function addDependency($dependant, $dependedOn)
