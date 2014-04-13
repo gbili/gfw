@@ -35,7 +35,7 @@ class Scriptalicious
         return $this->addScript($scriptIdentifier, $script, self::RENDER_TYPE_INLINE);
     }
 
-    public function addSrc($scriptIdentifier, $src)
+    public function addSrc($scriptIdentifier, $script)
     {
         return $this->addScript($scriptIdentifier, $script, self::RENDER_TYPE_REFERENCED);
     }
