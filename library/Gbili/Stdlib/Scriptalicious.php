@@ -15,7 +15,7 @@ namespace Gbili\Stdlib;
 class Scriptalicious
 {
     const RENDER_TYPE_INLINE='inline';
-    const RENDER_TYPE_SRC='src';
+    const RENDER_TYPE_REFERENCED='referenced';
     protected $dependencyManager;
 
     protected $scripts;
