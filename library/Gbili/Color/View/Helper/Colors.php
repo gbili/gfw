@@ -6,7 +6,7 @@
  * @copyright Copyright (c) 2005-2013 Zend Technologies USA Inc. (http://www.zend.com)
  * @license   http://framework.zend.com/license/new-bsd New BSD License
  */
-namespace GbiliViewHelper\View\Helper;
+namespace Gbili\Color\View\Helper;
 
 /**
  * View helper for translating messages.
@@ -24,7 +24,7 @@ class Colors extends \Zend\View\Helper\AbstractHelper
         return $this->colorFilter;
     }
 
-    public function setColorFilter(\GbiliViewHelper\ColorFilter $colorFilter)
+    public function setColorFilter(\Gbili\Color\ColorFilter $colorFilter)
     {
         $this->colorFilter = $colorFilter;
         return $this;
