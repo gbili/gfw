@@ -340,9 +340,8 @@ implements \Gbili\Db\DbInterface
     {
         $groupableFields = array_filter($this->getKeyedFields(), function ($element) {
             // Disable aggregate functions
-            return (0 < preg_match('/[^|()]/', $element));
+            return !preg_match('/[|()]/', $element);
         });
-        die(var_dump($groupableFields));
         return 'GROUP BY ' . implode(', ', $groupableFields);
     }
 	
