@@ -321,13 +321,25 @@ implements \Gbili\Db\DbInterface
      */
 	protected function getResultSetByCriteria($baseSql, array $criteria = array(), $trailingSql = '')
 	{
-         if (empty($criteria)) {
-             return $this->getResultSet($baseSql);
-         }
-         $sql = "$baseSql WHERE " . $this->criteriaToString($this->getKeyedFields(), $criteria) . " $trailingSql";
-         $resultSet =  $this->getResultSet($sql, $this->getParameters()); 
-         return $resultSet;
+        $sqlParts = array();
+        $sqlParts[] = $baseSql;
+        $sqlParts[] = $this->where($criteria);
+        $sqlParts[] = $this->groupBy();
+        $sqlParts[] = $trailingSql;
+
+        $sql = implode(' ', $sqlParts);
+        return $this->getResultSet($sql, $this->getParameters());
 	}
+
+    /**
+     * Group by clause for all the keyed fields
+     * according to SQL standard?
+     * @return string
+     */
+    protected function groupBy()
+    {
+        return 'GROUP BY ' . implode(', ', $this->getKeyedFields());
+    }
 	
 	/**
 	 * Inserts the data and returns the lasInsertId
@@ -369,6 +381,21 @@ implements \Gbili\Db\DbInterface
 	}
 
     /**
+     * Where clause composed from critera 
+     * @param $criteria array
+     * @see self::criteriaToString() for $criteria param
+     * @return string, empty string if empty criteria
+     */
+    public function where($criteria)
+    {
+        if (empty($criteria)) {
+            return '';
+        }
+        $criteriaSql = $this->criteriaToString($criteria);
+        return "WHERE $criteriaSql";
+    }
+
+    /**
      * Converts a criteria array to an SQL criteria string
      * @param array $criteria array(
      *                            'or' => array(
@@ -383,8 +410,11 @@ implements \Gbili\Db\DbInterface
      * The criteria array would be converted to a string:
      *     ( $fieldKey1 = $value1 or $fieldKey2 like $value2 or ($fieldKey3 >= $value3 and $fieldKey4 <= $value4 )
      */
-    public function criteriaToString(array $keyToField, array $criteria)
+    public function criteriaToString(array $criteria, array $keyToField=array())
     {
+        if (empty($keyToField)) {
+            $keyToField = $this->getKeyedFields();
+        }
         $operator = null;
         if (isset($criteria['and'])) {
             $operator = 'and';
@@ -408,7 +438,7 @@ implements \Gbili\Db\DbInterface
             if (is_string($k) && is_array($condition)) {
                 $subOperator = $k;
                 $subConditionGroup = $condition;
-                $conditions[] = $this->criteriaToString($keyToField, array($subOperator => $subConditionGroup));
+                $conditions[] = $this->criteriaToString(array($subOperator => $subConditionGroup), $keyToField);
                 continue;
             }
             $conditions[] = $this->conditionToString($keyToField, $condition);
