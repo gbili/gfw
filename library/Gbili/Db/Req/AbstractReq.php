@@ -338,10 +338,41 @@ implements \Gbili\Db\DbInterface
      */
     protected function groupBy()
     {
-        $groupableFields = array_filter($this->getKeyedFields(), function ($element) {
-            // Disable aggregate functions
-            return !preg_match('/[|()]/', $element);
-        });
+        $patterns = array();
+        $replacements = array();
+        array_push($patterns, '/[A-Za-z0-9]+\\([^)]+\\)/'); //remove aggregate functions
+        $replacements[] = '';
+        array_push($patterns, '/"[^"]+"/'); //remove string literals 
+        $replacements[] = '';
+        array_push($patterns, '/\'[^\']+\'/'); //remove string literals
+        $replacements[] = '';
+
+        // Only columns not in aggregate function
+        $groupableFields = array_reduce($elements, function ($r, $element) use ($patterns, $replacements) {
+            // Remove aggregate functions and string literals 
+            if (preg_match('/[\'"\\(]/', $element)) {
+                $element = preg_replace($patterns, $replacements, $element);
+            }
+
+            // Extract and add every concatenated column to $r
+            if (preg_match('/[|]/', $element)) {
+                $matches = array();
+                if (0 < preg_match_all('/([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)?)/', $element, $matches)) {
+                    $els = $matches[1];
+                    $count = count($els);
+                    for ($i=0;$i<$count;$i++) {
+                        $r[] = $els[$i];
+                    }
+                }
+            // Add simple columns
+            } else {
+                $element = trim($element);
+                if ($element !== '') {
+                    $r[] = $element;
+                }
+            }
+            return $r;
+        }, array());
         return 'GROUP BY ' . implode(', ', $groupableFields);
     }
 	

@@ -13,7 +13,7 @@ use Gbili\Sheet\Config                              as SheetConfig;
 use Gbili\Sheet\SheetCollection\SheetCollection;
 use Gbili\Line\LineCollection\LineCollection;
 
-class MatrixFormatter extends AbstractFormatter implements RowSheetCountFormatterInterface
+class CopyOfMatrixFormatter extends AbstractFormatter implements RowSheetCountFormatterInterface
 {
     
     /**

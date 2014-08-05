@@ -1,5 +1,5 @@
 <?php
-namespace Gbili\Sheet;
+namespace Gbili\Sheet\SheetCollection;
 
 /**
  * 

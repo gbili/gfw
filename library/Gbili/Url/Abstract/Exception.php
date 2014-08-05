@@ -1,5 +1,5 @@
 <?php
-namespace Gbili\Url;
+namespace Gbili\Url\Abstract;
 
 class Exception
 extends \Gbili\Exception\Exception

@@ -1,5 +1,5 @@
 <?php
-namespace Gbili\Vid\Savable;
+namespace Gbili;
 
 use Gbili\Time\Length\StrToInt as TimeLengthStrToInt;
 use Gbili\Miner\Lexer\AbstractLexer;
