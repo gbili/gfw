@@ -342,7 +342,7 @@ implements \Gbili\Db\DbInterface
             // Disable aggregate functions
             return (0 < preg_match('/[^|()]/', $element));
         });
-        var_dump($groupableFields);
+        die(var_dump($groupableFields));
         return 'GROUP BY ' . implode(', ', $groupableFields);
     }
 	
