@@ -348,7 +348,7 @@ implements \Gbili\Db\DbInterface
         $replacements[] = '';
 
         // Only columns not in aggregate function
-        $groupableFields = array_reduce($elements, function ($r, $element) use ($patterns, $replacements) {
+        $groupableFields = array_reduce($this->getKeyedFields(), function ($r, $element) use ($patterns, $replacements) {
             // Remove aggregate functions and string literals 
             if (preg_match('/[\'"\\(]/', $element)) {
                 $element = preg_replace($patterns, $replacements, $element);
