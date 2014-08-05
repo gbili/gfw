@@ -338,7 +338,14 @@ implements \Gbili\Db\DbInterface
      */
     protected function groupBy()
     {
-        return 'GROUP BY ' . implode(', ', $this->getKeyedFields());
+        $groupableFields = array_filter($this->getKeyedFields(), function ($r, $element) {
+            // Disable aggregate functions
+            if (!(0 < preg_match('/[|()]/', $element))) {
+                $r[] = $element;
+            }
+            return $r;
+        });
+        return 'GROUP BY ' . implode(', ', $groupableFields);
     }
 	
 	/**
