@@ -351,7 +351,7 @@ class Blueprint
     {
 		$callbackInfo = DbRegistry::getInstance($this)->getActionCallbackMethodName($info['actionId']);
 		if (empty($callbackInfo) || false === $callbackInfo) {
-            return;
+            return $this;
 		}
 
 		if (null === $this->callbackClassInstance) {
@@ -399,10 +399,20 @@ class Blueprint
 			$this->currentAction->setGroupMapping($groupMapping);
 		}
 		$this->currentAction->setAsOptional($info['isOpt']);
+	}
+
+    /**
+     * Init extract method  wrapper if the action provides info
+     * for it
+     * @param array $info blueprint info for action
+     * @return self
+     */
+    protected initExtractMethodForActionInInfo(array $info)
+    {
 		$interceptMap = DbRegistry::getInstance($this)->getActionGroupToMethodNameAndInterceptType($info['actionId']);
 		
-		if (false === $interceptMap) {
-		    return;
+		if (empty($interceptMap) || false === $interceptMap) {
+		    return $this;
 		}
 		
 		//Out::l2("uses intercept\n" . print_r($interceptMap, true));
@@ -412,7 +422,8 @@ class Blueprint
 		$mW = new ExtractMethodWrapper($this->methodClassInstance, $interceptMap);
 		//Out::l1($this->methodClassInstance);
 		$this->currentAction->setMethodWrapper($mW);
-	}
+        return $this;
+    }
 	
 	/**
 	 * 
