@@ -261,10 +261,13 @@ class Blueprint
 			$this->loadCMClass($record['path'], (integer) $record['pathType'], (integer) $record['classType']);
 		}
 
+        if (empty($bRecordset)) {
+			throw new Exception('There are no records in db');
+        }
+
 		//set the new instance generating point action id
 		if (0 !== (integer) $record['newInstanceGeneratingPointActionId']) {
 		    $this->newInstanceGeneratingPointActionId = (integer) $record['newInstanceGeneratingPointActionId'];
-			//throw new Exception('there must be a newInstanceGeneratingPointActionId');
 		}
 		
 	}
