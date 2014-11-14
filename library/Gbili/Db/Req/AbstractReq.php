@@ -412,7 +412,7 @@ implements \Gbili\Db\DbInterface
 			throw new Exception('You must specify the $idColumnName parameter, if you want to be able to get the id in existsElement()');
 		}
 		//return the id if the res is an array or return false
-		return (is_array($res))? $res[0][(string) $idColumnName] : false;
+		return (is_array($res) && !empty($res))? $res[0][(string) $idColumnName] : false;
 	}
 
     /**
