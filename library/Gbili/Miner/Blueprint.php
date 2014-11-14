@@ -399,6 +399,8 @@ class Blueprint
 			$this->currentAction->setGroupMapping($groupMapping);
 		}
 		$this->currentAction->setAsOptional($info['isOpt']);
+
+        $this->initExtractMethodForActionInInfo($info);
 	}
 
     /**
@@ -407,7 +409,7 @@ class Blueprint
      * @param array $info blueprint info for action
      * @return self
      */
-    protected initExtractMethodForActionInInfo(array $info)
+    protected function initExtractMethodForActionInInfo(array $info)
     {
 		$interceptMap = DbRegistry::getInstance($this)->getActionGroupToMethodNameAndInterceptType($info['actionId']);
 		
