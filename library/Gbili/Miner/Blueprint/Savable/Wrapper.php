@@ -104,7 +104,7 @@ class Wrapper
         }
 
         if ($parentIndex instanceof \Gbili\Miner\Blueprint\Action\Savable\AbstractSavable) {
-            $parentIndex $this->getActionIndex($parentIndex);
+            $parentIndex = $this->getActionIndex($parentIndex);
         }
         
         $this->currentActionIndex = count($this->actionSet);
