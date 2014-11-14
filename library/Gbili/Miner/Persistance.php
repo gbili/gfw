@@ -8,7 +8,7 @@ use Zend\EventManager\Event;
 use Gbili\Miner\Persistance\Gauge\PersistanceAllowedFailsGauge;
 use Gbili\Miner\Persistance\Gauge\UnpersistedInstancesGauge;
 
-use Zend\EventManager\ProvidesEvents;
+use Zend\EventManager\EventManagerAwareTrait;
 use Zend\EventManager\EventManagerAwareInterface;
 
 use Gbili\Miner\Persistance\PersistableInterface;
@@ -22,7 +22,7 @@ use Gbili\Db\Registry          as DbRegistry;
  */
 class Persistance implements EventManagerAwareInterface, AttachableListenersInterface
 {
-    use ProvidesEvents;
+    use EventManagerAwareTrait;
     
     protected $defaultListeners = array(
         'LexerListenerAggregate',

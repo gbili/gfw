@@ -5,7 +5,7 @@ use Gbili\Miner\Service\ServiceManagerConfig;
 
 use Zend\ServiceManager\ServiceManager;
 use Zend\Stdlib\CallbackHandler;
-use Zend\EventManager\ProvidesEvents;
+use Zend\EventManager\EventManagerAwareTrait;
 use Zend\EventManager\EventManagerAwareInterface;
 
 use Gbili\Miner\AttachableListenersInterface;
@@ -18,7 +18,7 @@ use Gbili\Miner\Application\FlowEvaluator;
  */
 class Application implements EventManagerAwareInterface, AttachableListenersInterface
 {
-    use ProvidesEvents;
+    use EventManagerAwareTrait;
     
     /**
      * 

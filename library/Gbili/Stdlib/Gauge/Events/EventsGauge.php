@@ -3,12 +3,12 @@ namespace Gbili\Stdlib\Gauge\Events;
 
 use Gbili\Stdlib\Gauge\Gauge;
 use Zend\EventManager\EventManagerAwareInterface;
-use Zend\EventManager\ProvidesEvents;
+use Zend\EventManager\EventManagerAwareTrait;
 use Zend\EventManager\EventInterface;
 
 class EventsGauge extends Gauge implements EventManagerAwareInterface
 {
-    use ProvidesEvents;
+    use EventManagerAwareTrait;
     
     /**
      * (non-PHPdoc)

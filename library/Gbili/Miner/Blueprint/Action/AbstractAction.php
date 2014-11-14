@@ -1,7 +1,7 @@
 <?php
 namespace Gbili\Miner\Blueprint\Action;
 
-use Zend\EventManager\ProvidesEvents;
+use Zend\EventManager\EventManagerAwareTrait;
 use Gbili\Miner\Blueprint;
 use Gbili\Stdlib\CircularCollection;
 use Gbili\Out\Out;
@@ -21,7 +21,7 @@ use Gbili\Out\Out;
  */
 abstract class AbstractAction
 {
-	use ProvidesEvents;
+	use EventManagerAwareTrait;
 	
 	const EXECUTION_SUCCESS        = true;
 	const EXECUTION_FAIL           = false;

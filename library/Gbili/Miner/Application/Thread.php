@@ -6,7 +6,7 @@ use Gbili\Miner\Application\Application;
 use Gbili\Miner\Blueprint;
 use Gbili\Miner\AttachableListenersInterface;
 
-use Zend\EventManager\ProvidesEvents;
+use Zend\EventManager\EventManagerAwareTrait;
 use Zend\EventManager\EventManagerAwareInterface;
 
 /**
@@ -18,7 +18,7 @@ use Zend\EventManager\EventManagerAwareInterface;
  */
 class Thread implements EventManagerAwareInterface, AttachableListenersInterface
 {
-    use ProvidesEvents;
+    use EventManagerAwareTrait;
     
     /**
      * 
