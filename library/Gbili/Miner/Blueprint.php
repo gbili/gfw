@@ -184,13 +184,14 @@ class Blueprint
 	{
 	    foreach ($this->actionStack as $id => $action) {
     		$injectData = DbRegistry::getInstance('\Gbili\Miner\Blueprint')->getInjectionData($id);
-    		if (is_array($injectData)) {
-    		    $injectData               = current($injectData);
-        		$injectingAction          = $this->actionStack[$injectData['injectingActionId']];
-        		$getInputFromactionGroup  = $injectData['inputGroup'];
-    			$action->setOtherInputActionInfo($injectingAction, $getInputFromactionGroup);
-    			$injectingAction->setInjectsParent();
-    		}
+
+    		if (empty($injectData) || is_array($injectData)) continue;
+
+            $injectData               = current($injectData);
+            $injectingAction          = $this->actionStack[$injectData['injectingActionId']];
+            $getInputFromactionGroup  = $injectData['inputGroup'];
+            $action->setOtherInputActionInfo($injectingAction, $getInputFromactionGroup);
+            $injectingAction->setInjectsParent();
 	    }
 	}
 	
