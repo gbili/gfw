@@ -337,11 +337,23 @@ class Blueprint
 		
 		$this->currentAction = $action;
 		$this->currentAction->setAsOptional($info['isOpt']);
-		//see if it uses callback
+
+        $this->initCallbackWrapperForActionInInfo($info);
+	}
+
+    /**
+     * Init callback wrapper if the action provides info
+     * for it
+     * @param array $info blueprint info for action
+     * @return self
+     */
+    protected function initCallbackWrapperForActionInInfo(array $info)
+    {
 		$callbackInfo = DbRegistry::getInstance($this)->getActionCallbackMethodName($info['actionId']);
-		if (false === $callbackInfo) {
+		if (empty($callbackInfo) || false === $callbackInfo) {
             return;
 		}
+
 		if (null === $this->callbackClassInstance) {
 		    throw new Exception('the current action extract wants to use method hook, but the blueprint did not manage to instantiate the method class');
 		}
@@ -349,7 +361,7 @@ class Blueprint
 		//Out::l1($row['methodName']);
 		//if the callbacInstance is null it will throw an exception because of param type hint
 		$cW = new GetContentsCallbackWrapper($this->callbackClassInstance, $row['methodName']);
-			
+ 
 		//not all callbacks have a mapping (ex: a root get contents that uses itself as input)
 		$callbackMapping = DbRegistry::getInstance($this)->getActionCallbackParamsToGroupMapping($info['actionId']);
 		//Out::l2("retrieving action callback params to group mapping : \n" . print_r($callbackMapping, true));
@@ -365,7 +377,9 @@ class Blueprint
 		}
 		$cW->setParamToGroupMapping($callbackParamGroupMapping);
 		$this->currentAction->setCallbackWrapper($cW);
-	}
+
+        return $this;
+    } 
 	
 	/**
 	 * 
