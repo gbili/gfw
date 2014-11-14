@@ -21,7 +21,7 @@ class Wrapper
      * 
      * @var number
      */
-    private $currentActionPointer = 0;
+    private $currentActionIndex = 0;
     
     /**
      * 
@@ -74,7 +74,7 @@ class Wrapper
     public function getAction($index = null)
     {
         if (null === $index) {
-            $index = $this->currentActionPointer;
+            $index = $this->currentActionIndex;
         } 
         if (!isset($this->actionSet[$index])) {
             throw new Exception('The index is not set, action has not been created yet');
@@ -85,10 +85,10 @@ class Wrapper
     /**
      * 
      * @param string $type action type
-     * @param integer pointer
+     * @param integer index
      * @return \Gbili\Miner\Blueprint\Action\Savable\AbstractSavable
      */
-    public function createChild($type = 'GetContents', $parentPointer = null)
+    public function createChild($type = 'GetContents', $parentIndex = null)
     {
         $classname = "\\Gbili\\Miner\\Blueprint\\Action\\$type\\Savable"; 
         $child = new $classname();
@@ -99,56 +99,60 @@ class Wrapper
             return $child;
         }
         
-        if (null === $parentPointer) {
-            $parentPointer = $this->currentActionPointer;
+        if (null === $parentIndex) {
+            $parentIndex = $this->currentActionIndex;
+        }
+
+        if ($parentIndex instanceof \Gbili\Miner\Blueprint\Action\Savable\AbstractSavable) {
+            $parentIndex $this->getActionIndex($parentIndex);
         }
         
-        $this->currentActionPointer = count($this->actionSet);
+        $this->currentActionIndex = count($this->actionSet);
         
-        if (!isset($this->actionSet[$parentPointer])) {
-            throw new Exception('Bad pointer, no action has this pointer: ' . $parentPointer);
+        if (!isset($this->actionSet[$parentIndex])) {
+            throw new Exception('Bad index, no action has this index: ' . $parentIndex);
         }
         
-        $this->actionToParent[$this->currentActionPointer] = $parentPointer;
+        $this->actionToParent[$this->currentActionIndex] = $parentIndex;
         
-        $this->actionSet[$parentPointer]->addChild($child);
+        $this->actionSet[$parentIndex]->addChild($child);
         $this->actionSet[] = $child;
         
         return $child;
     }
     
     /**
-     * Returns a pointer to the last action that was created. Can
+     * Returns a index to the last action that was created. Can
      * be used to get a specific parent's action
      * 
      * @throws Exception
      * @return \Gbili\Miner\Blueprint\Savable\number
      */
-    public function getCurrentActionPointer()
+    public function getCurrentActionIndex()
     {
         if (empty($this->actionSet)) {
             throw new Exception('No actions for the moment, add one, and call this afterwards');
         }
-        return $this->currentActionPointer;
+        return $this->currentActionIndex;
     }
     
     /**
      * 
-     * @param unknown_type $brotherPointer
+     * @param unknown_type $brotherIndex
      * @throws Exception
      * @return \Gbili\Miner\Blueprint\Action\Extract\Savable
      */
-    public function createBrotherExtract($brotherPointer = null)
+    public function createBrotherExtract($brotherIndex = null)
     {
-        if (null === $brotherPointer) {
-            $brotherPointer = $this->getCurrentActionPointer();
+        if (null === $brotherIndex) {
+            $brotherIndex = $this->getCurrentActionIndex();
         }
         
-        if (!isset($this->actionToParent[$brotherPointer])) {
-            throw new Exception('Bad Pointer there is no parent for this pointer, or you cannot create a brother to the root action');
+        if (!isset($this->actionToParent[$brotherIndex])) {
+            throw new Exception('Bad Index there is no parent for this index, or you cannot create a brother to the root action');
         }
         
-        return $this->createChildExtract($this->actionToParent[$brotherPointer]);
+        return $this->createChildExtract($this->actionToParent[$brotherIndex]);
     }
     
     /**
@@ -158,6 +162,20 @@ class Wrapper
     public function createChildGetContents($parent = null)
     {
         return $this->createChild('GetContents', $parent);
+    }
+
+    /**
+     * @param \Gbili\Miner\Blueprint\Action\Savable\AbstractSavable $action
+     * @throws \Exception
+     * @return integer
+     */
+    public function getActionIndex(\Gbili\Miner\Blueprint\Action\Savable\AbstractSavable $action)
+    {
+        $index = array_search($action, $this->actionSet);
+        if (false === $index) {
+            throw new \Exception('Action has not been added to the actionset');
+        }
+        return $index;
     }
     
     /**
