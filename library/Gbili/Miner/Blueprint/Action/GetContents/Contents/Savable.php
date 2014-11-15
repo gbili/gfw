@@ -9,6 +9,15 @@ namespace Gbili\Miner\Blueprint\Action\GetContents\Contents;
 class Savable
 extends \Gbili\Savable\Savable
 {
+    /**
+     * Tells whether the contents have been
+     * fetched from storage or through the
+     * built in function file_get_contents
+     *
+     * @var boolan
+     */
+    protected $isContentsFromStorage;
+
 	/**
 	 * 
 	 * @return unknown_type
@@ -80,15 +89,46 @@ extends \Gbili\Savable\Savable
 	    $contents = \Gbili\Db\Registry::getInstance($this)->getContents($this->getUrl());
 
         if (false === $contents) {
-            $contents = file_get_contents($this->getUrl()->toString());
+            $contents = $this->getFreshContents();
+        } else {
+            $this->isContentsFromStorage = true;
         }
-	    
+
 	    if (false !== $contents) {
 	        $this->setContents($contents);
 	    }
 	    
 	    return $contents;
 	}
+
+	/**
+	 * Get contents from builtin function not from db
+     *
+	 * @return mixed:false|string 
+	 */
+	public function getFreshContents()
+	{
+        $result = file_get_contents($url->toString());
+        $this->isContentsFromStorage = false;
+        if (false !== $result) {
+    	    $result = \Gbili\Encoding\Encoding::utf8Encode($result);
+        }
+	    return $result;
+	}
+
+    /**
+     * Have the contents been fetched from the
+     * built in method file_get_contents just now
+     * or do they come from storage
+     * @return boolean
+     */
+    public function isFreshContents()
+    {
+        if (null === $this->isContentsFromStorage) {
+            throw new \Exception('Call getContents() before ' . __FUNCTION__);
+        }
+        return !$this->isContentsFromStorage;
+    }
 	
 	/**
 	 * 

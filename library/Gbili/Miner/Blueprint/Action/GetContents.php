@@ -5,7 +5,6 @@ use Gbili\Miner\Blueprint\Action\GetContents\Callback\Wrapper;
 use Gbili\Out\Out;
 use Gbili\Url\Url; 
 use Gbili\Encoding\Encoding;
-use Gbili\Miner\Blueprint\Action\GetContents\Contents\Savable as ContentsSavable;
 
 /**
  * Get the contents from a url and
@@ -194,32 +193,20 @@ extends AbstractAction
 	 */
 	protected function getContents(Url $url)
 	{
-        $c = new ContentsSavable();
+        $c = new GetContents\Contents\Savable();
         $c->setUrl($url);
         $result = $c->getContents();
-	    
-	    if (!is_string($result)) {
-	        $result = $this->getContentsOverWeb($url);
-	        if (false !== $result) {
-    	        $c->setContents($result);
-    	        $c->save();
-	        }
-	    }
-	    return $result;
-	}
-	
-	/**
-	 * 
-	 * @param Url $url
-	 * @return unknown
-	 */
-	protected function getContentsOverWeb(Url $url)
-	{
-        $this->getBlueprint()->getServiceManager()->get('Delay')->reset()->apply();
-        $result = file_get_contents($url->toString());
-        if (false !== $result) {
-    	    $result = Encoding::utf8Encode($result);
+
+        //Apply a delay (even if it is after the actual fetching,
+        //it will delay the rest of the app, thus next fetch)
+        if ($c->isContentsFresh()) {
+            $this->getBlueprint()->getServiceManager()->get('Delay')->reset()->apply();
         }
+
+        if (false !== $result) {
+            $c->save();
+        }
+
 	    return $result;
 	}
 	
