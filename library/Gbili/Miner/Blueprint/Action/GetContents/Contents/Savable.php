@@ -108,7 +108,7 @@ extends \Gbili\Savable\Savable
 	 */
 	public function getFreshContents()
 	{
-        $result = file_get_contents($url->toString());
+        $result = file_get_contents($this->getUrl()->toString());
         $this->isContentsFromStorage = false;
         if (false !== $result) {
     	    $result = \Gbili\Encoding\Encoding::utf8Encode($result);
