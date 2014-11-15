@@ -3,9 +3,6 @@ namespace Gbili\Miner\Blueprint\Action\GetContents;
 
 use Gbili\Miner\Blueprint\Action\RootAction;
 use Gbili\Miner\Blueprint\Action\GetContents;
-use Gbili\Miner\Blueprint\Action\Flow\End;
-use Gbili\Miner\Blueprint\Action\Flow\PlaceMe;
-
 
 class RootGetContents extends GetContents implements RootAction
 {
@@ -84,7 +81,7 @@ class RootGetContents extends GetContents implements RootAction
         $this->bootstrapInputData = false;
         return $ret;
     }
-    
+
     /**
      * (non-PHPdoc)
      * @see Blueprint/Miner_Persistance_Blueprint_Action#clear()

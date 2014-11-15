@@ -1,13 +1,6 @@
 <?php
 namespace Gbili\Miner\Application;
 
-use Gbili\Miner\Application\Flow\DiscardResultsPlaceParent;
-use Gbili\Miner\Application\Flow\IfOptionalPlaceParentOrThrow;
-use Gbili\Miner\Application\Flow\MoreResultsOrParent;
-use Gbili\Miner\Application\Flow\SameResultNextChild;
-use Gbili\Miner\Application\Flow\PlaceNextInterface;
-use Gbili\Miner\Application\Flow\MoreResults;
-
 class FlowEvaluator
 {
     protected $thread;
@@ -43,7 +36,7 @@ class FlowEvaluator
         $action = $this->thread->getAction();
         
         if (!$action->executionSucceed()) {//1.
-            if (!$action->isOptional()) { //4.
+            if (!$action->isOptional() || $action->isRoot()) { //4.
                 return false;
             }
             $this->thread->retakeFlowFromParent();
@@ -61,6 +54,9 @@ class FlowEvaluator
         }
         
         if (!$action->hasMoreResults()) {//3.
+            if ($action->isRoot()) { //4.
+                return false;
+            }
             $this->thread->retakeFlowFromParent();
             return $this->evaluate();
         }
