@@ -80,7 +80,7 @@ extends \Gbili\Savable\Savable
 	    $contents = \Gbili\Db\Registry::getInstance($this)->getContents($this->getUrl());
 
         if (false === $contents) {
-            $contents = file_get_contents($this->getUrl());
+            $contents = file_get_contents($this->getUrl()->toString());
         }
 	    
 	    if (false !== $contents) {
