@@ -54,7 +54,7 @@ class RootGetContents extends GetContents implements RootAction
         if ($this->hasCallbackWrapper()) {
             return $this->getInputFromCallback();
         }
-        throw new Exception('Root can only get input from 1. bootstrapInput, 2. otherInputActionId (different than parent (would be itself)), 3. callback');
+        return null; // throw new Exception('Root can only get input from 1. bootstrapInput, 2. otherInputActionId (different than parent (would be itself)), 3. callback');
     }
     
     /**
