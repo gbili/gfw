@@ -1,9 +1,6 @@
 <?php
 namespace Gbili\Miner\Blueprint\Action\GetContents\Contents;
 
-use Gbili\Db\Registry as DbRegistry;
-use Gbili\Url\Url;
-
 /**
  * 
  * @author gui
@@ -36,7 +33,7 @@ extends \Gbili\Savable\Savable
 	 * @throws Exception
 	 * @return \Gbili\Miner\Blueprint\Action\GetContents\Savable
 	 */
-	public function setUrl(Url $url)
+	public function setUrl(\Gbili\Url\Url $url)
 	{
 		$this->setElement('url', $url);
 		return $this;
@@ -80,7 +77,11 @@ extends \Gbili\Savable\Savable
 	        throw new \Exception('In order to get contents you must set the url');
 	    }
 	    
-	    $contents = DbRegistry::getInstance($this)->getContents($this->getUrl());
+	    $contents = \Gbili\Db\Registry::getInstance($this)->getContents($this->getUrl());
+
+        if (false === $contents) {
+            $contents = file_get_contents($this->getUrl());
+        }
 	    
 	    if (false !== $contents) {
 	        $this->setContents($contents);
