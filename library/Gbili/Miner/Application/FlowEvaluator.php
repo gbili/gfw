@@ -36,7 +36,7 @@ class FlowEvaluator
         $action = $this->thread->getAction();
         
         if (!$action->executionSucceed()) {//1.
-            if ($action->isRoot() || !$action->isOptional()) { //4.
+            if ($action->isRoot() || (!$action->isOptional())) { //4.
                 return false;
             }
             $this->thread->retakeFlowFromParent();

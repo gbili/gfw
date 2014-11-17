@@ -199,7 +199,7 @@ extends AbstractAction
 
         //Apply a delay (even if it is after the actual fetching,
         //it will delay the rest of the app, thus next fetch)
-        if ($c->isContentsFresh()) {
+        if ($c->isFreshContents()) {
             $this->getBlueprint()->getServiceManager()->get('Delay')->reset()->apply();
         }
 
