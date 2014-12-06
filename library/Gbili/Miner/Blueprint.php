@@ -168,7 +168,7 @@ class Blueprint
 		
 		//ensure there is a new instance generating point action is present
 		if (null === $this->newInstanceGeneratingPointActionId) {
-			throw new Exception( 'The actionId specified as video entity starting point is not present');
+			throw new Exception( 'There is no new instance generating point');
 		}
 		
 		//now pass the root pointer to the blueprint

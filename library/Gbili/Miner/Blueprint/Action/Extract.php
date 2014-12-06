@@ -267,7 +267,11 @@ class Extract extends AbstractAction
 		$res = $this->getResults();
 		
 		if (!isset($res[$groupIdentifier])) {
-			throw new Extract\Exception('The group does not exist in regex object');
+            throw new Extract\Exception(
+                'The group: ' . $groupIdentifier. ', does not exist in results: ' 
+                . print_r($res, true)
+                . $this->toString()
+            );
 		}
 
 		return $res[$groupIdentifier];	
