@@ -237,12 +237,12 @@ class Blueprint
 		if (!($dbReqObj instanceof DbInterface)) {
 			throw new Exception('The DbRegistry must return an instanceof \\Gbili\\Miner\\Blueprint\\Db\\DbInterface');
 		}
-		$bRecordset = $dbReqObj->getBlueprintInfo($this->host);
-		if (false === $bRecordset) {
+		$recordset = $dbReqObj->getBlueprintInfo($this->host);
+		if (false === $recordset) {
 			throw new Exception('The blueprint does not exist');
 		}
 		
-        if (empty($bRecordset)) {
+        if (empty($recordset)) {
 			throw new Exception('There are no records in db');
         }
 
