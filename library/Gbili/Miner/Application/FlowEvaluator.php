@@ -3,6 +3,21 @@ namespace Gbili\Miner\Application;
 
 class FlowEvaluator
 {
+    /**
+     * @var boolean
+     */
+    const EXECUTE = 1;
+
+    /**
+     * @var
+     */
+    const FAIL = 2;
+
+    /**
+     * @var
+     */
+    const FLOW_END = 3;
+
     protected $thread;
     
     /**
@@ -37,7 +52,7 @@ class FlowEvaluator
         
         if (!$action->executionSucceed()) {//1.
             if ($action->isRoot() || (!$action->isOptional())) { //4.
-                return false;
+                return self::FAIL;
             }
             $this->thread->retakeFlowFromParent();
             return $this->evaluate();
@@ -49,20 +64,20 @@ class FlowEvaluator
             $childrenCollection->getNext();
             if (!$childrenCollection->hasChangedLap()) {
                 $this->thread->placeChildIntoFlow();
-                return true;
+                return self::EXECUTE;
             }
         }
         
         if (!$action->hasMoreResults()) {//3.
             if ($action->isRoot()) { //4.
-                return false;
+                return self::FLOW_END;
             }
             $this->thread->retakeFlowFromParent();
             return $this->evaluate();
         }
         
         $this->thread->placeSameAction();//Aka execute next result
-        return true;
+        return self::EXECUTE;
     }
     
     public function attemptFailRecovery()

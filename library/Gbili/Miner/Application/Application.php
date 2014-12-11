@@ -128,7 +128,10 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
     {
         do {
             $this->executeAction();
-        } while ($this->flowEvaluator->evaluate() || $this->manageFail());
+            $status = $this->flowEvaluator->evaluate();
+        } while ($status === FlowEvaluator::EXECUTE 
+            || ($status === FlowEvaluator::FAIL && $this->manageFail())
+        );
     }
     
     /**
@@ -146,7 +149,7 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
     protected function executeAction()
     {
         $this->triggerEvent(    __FUNCTION__ . '.pre');
-        
+
         if ($this->getThread()->getAction()->execute()) {
             $this->triggerEvent(__FUNCTION__ . '.success');
             $this->manageExecutedAction();
@@ -183,7 +186,6 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
     public function manageFail()
     {
         $responses = $this->triggerEvent(__FUNCTION__ . '.normalAction');
-        var_dump($responses);
         return !$responses->stopped() && $this->flowEvaluator->attemptFailRecovery();
     }
     
