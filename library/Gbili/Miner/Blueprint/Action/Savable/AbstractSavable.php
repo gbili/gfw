@@ -24,10 +24,20 @@ abstract class AbstractSavable extends Savable
 	private static $order = array();
 	
 	/**
-	 * 
-	 * @var unknown_type
+     * When there is no capturing group in parent
+     * then the matched string will be in result
+     * with index 0 
+     *
+	 * @var integer 
 	 */
-	const DEFAULT_INPUT_PARENT_REGEX_GROUP_NUMBER = 1;
+	const DEFAULT_INPUT_PARENT_REGEX_GROUP_NUMBER = 0;
+	
+    /**
+     * Used when parent is of type get contents
+     *
+     * @var integer
+     */
+	const DEFAULT_NO_INPUT_PARENT_REGEX_GROUP_NUMBER = 0;
 
 	/**
 	 * Change requestor class name
@@ -385,7 +395,7 @@ abstract class AbstractSavable extends Savable
 			if ($this->hasParent() && $this->getParent()->getType() === Blueprint::ACTION_TYPE_EXTRACT) {
 				$this->setInputParentRegexGroup(self::DEFAULT_INPUT_PARENT_REGEX_GROUP_NUMBER);
 			} else {
-				$this->setInputParentRegexGroup(Req::DEFAULT_NO_INPUT_PARENT_REGEX_GROUP_NUMBER);
+				$this->setInputParentRegexGroup(self::DEFAULT_NO_INPUT_PARENT_REGEX_GROUP_NUMBER);
 			}
 		}
 		return $this->getElement('inputParentRegexGroup');

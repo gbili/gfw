@@ -268,7 +268,7 @@ class Extract extends AbstractAction
 		
 		if (!isset($res[$groupIdentifier])) {
             throw new Extract\Exception(
-                'The group: ' . $groupIdentifier. ', does not exist in results. Only keys: ' 
+                'The group: ' . $groupIdentifier. ', does not exist in results. Result has groups: ' 
                 . implode(', ', array_keys($res)) . ' have been found in result.'
                 . '\nHere is the full result: '
                 . print_r($res, true)
