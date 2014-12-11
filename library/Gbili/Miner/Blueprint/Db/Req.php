@@ -27,7 +27,7 @@ implements DbInterface
 	public function getBlueprintInfo(Host $host)
 	{
 		return $this->getResultSet("SELECT b.bId AS bId,
-									   b.newInstanceGeneratingPointActionId AS newInstanceGeneratingPointActionId,
+									       b.newInstanceGeneratingPointActionId AS newInstanceGeneratingPointActionId
 									FROM Blueprint AS b 
 									WHERE b.host = :host",
 								  array(':host' => $host->toString()));
