@@ -137,7 +137,7 @@ implements DbInterface
 	{
 		$sql = "SELECT m.name AS methodName,
 					   b.regexGroup AS regexGroup,
-					   b.interceptType AS interceptType
+					   b.interceptType AS interceptType,
 					   b.priority AS priority 
 					FROM Blueprint_MethodMethod as m
 						LEFT JOIN BAction_RegexGroup_r_MethodMethod as b

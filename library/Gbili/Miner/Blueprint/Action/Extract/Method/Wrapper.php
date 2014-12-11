@@ -147,11 +147,11 @@ class Wrapper
 				throw new Wrapper\Exception('the invokable does not exist in serviceManager, invokableIdentifier : ' . $invokableIdentifier);
 			}
 
-            if (!is_array($this->methodCallSuite[$priority]) {
+            if (!is_array($this->methodCallSuite[$priority])) {
                 $this->methodCallSuite[$priority] = array();
             }
 
-            if (!isset($this->methodCallSuite[$priority][$interceptType]) {
+            if (!isset($this->methodCallSuite[$priority][$interceptType])) {
                 $this->methodCallSuite[$priority][$interceptType] = array();
             }
 
