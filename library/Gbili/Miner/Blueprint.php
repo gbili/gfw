@@ -165,7 +165,7 @@ class Blueprint
             // @todo Possible bug: || is_array() should probably be || !is_array()
             // since $injectData is used as an array below this check
             // @important changed || is_array() to || !is_array()
-    		if (empty($injectData) || !is_array($injectData)) continue; 
+    		if (empty($injectData) || (!is_array($injectData))) continue; 
 
             $injectData               = current($injectData);
             $injectingAction          = $this->actionStack[$injectData['injectingActionId']];

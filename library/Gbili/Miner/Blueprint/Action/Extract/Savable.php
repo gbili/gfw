@@ -77,12 +77,21 @@ extends \Gbili\Miner\Blueprint\Action\Savable\AbstractSavable
 
     /**
      * Delegate to group result Mapping
+     * @return mixed
      */
     public function __call($method, $args)
     {
-        if (!method_exists($this->getGroupResultMapping(), $method) {
+        $grm = $this->getGroupResultMapping();
+        if (!method_exists($grm, $method)) {
             throw new Exception("The method: $method does not exist");
         }
-        return call_user_func_array(array($this->getGroupResultMapping(), $method()), $args);
+        $ret = call_user_func_array(array($grm, $method), $args);
+
+        // Instead of returning grm return $this 
+        // Useful to allow method chaining
+        if ($ret === $grm) {
+            $ret = $this;
+        } 
+        return $ret;
     }
 }
