@@ -18,6 +18,13 @@ use Gbili\Miner\Application\FlowEvaluator;
  */
 class Application implements EventManagerAwareInterface, AttachableListenersInterface
 {
+    /**
+     * Returned when too many fails have happened 
+     *
+     * @var 
+     */
+    const NO_MORE_FAILS_ALLOWED = 4;
+
     use EventManagerAwareTrait;
     
     /**
@@ -130,8 +137,10 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
             $this->executeAction();
             $status = $this->flowEvaluator->evaluate();
         } while ($status === FlowEvaluator::EXECUTE 
-            || ($status === FlowEvaluator::FAIL && $this->manageFail())
+            || ($status === FlowEvaluator::FAIL && ($status = $this->manageFail()) && $status === FlowEvaluator::EXECUTE)
         );
+
+        return $status;
     }
     
     /**
@@ -186,7 +195,10 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
     public function manageFail()
     {
         $responses = $this->triggerEvent(__FUNCTION__ . '.normalAction');
-        return !$responses->stopped() && $this->flowEvaluator->attemptFailRecovery();
+        if ($responses->stopped()) {
+            return self::NO_MORE_FAILS_ALLOWED;
+        }
+        return $this->flowEvaluator->attemptFailRecovery();
     }
     
     /**
