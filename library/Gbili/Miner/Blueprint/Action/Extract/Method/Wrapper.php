@@ -1,139 +1,244 @@
 <?php
 namespace Gbili\Miner\Blueprint\Action\Extract\Method;
 
-use Gbili\Miner\Blueprint\Action\CMLoader;
-
 use Gbili\Out\Out;
 
 /**
+ * This method 
  * 
+ * There are two intercept types: TOGETHER or ONEBYONE
+ * Actions that use interception, will pass their results
+ * to this interception suite 
+ *
+ * Intercept groups one by one won't modify the results array cardinality
+ * Intercept groups together will reduce cardinality to 1
+ * 
+ * The same method can be used in different priorities
+ * The same groups can be intercepted in different method calls (be careful with intercept together
+ * That's why the priority is considered as the index.
+ *
+ * @see \Gbili\Miner\Blueprint\Action\Extract\Method\Wrapper::initializeMethodCallSuite() for more info
  * @author gui
  *
  */
 class Wrapper
 {
 	/**
+     * An intercept type is a way to pass the results obtained
+     * from an action, to the intercept method
 	 * 
 	 * @var unknown_type
 	 */
 	const INTERCEPT_TYPE_TOGETHER = 2;
 	const INTERCEPT_TYPE_ONEBYONE = 3;
 
+    /**
+     * Intercept types to method name that can
+     * handle the intercept type
+     *
+     * @var array
+     */
+    protected $interceptTypeToHandleBy = array(
+        self::INTERCEPT_TYPE_ONEBYONE => 'interceptGroupsOneByOne',
+        self::INTERCEPT_TYPE_TOGETHER => 'interceptGroupsTogether', 
+    );
+
 	/**
-	 * The instance that contains all methods
+	 * Contains all invokables 
+	 * 
+	 * @var \Zend\ServiceManager\ServiceManager
+	 */
+	private $serviceManager;
+	
+	/**
+	 * Contains each a
 	 * 
 	 * @var unknown_type
 	 */
-	private $methodClassInstance;
+	private $methodCallSuite = array();
 	
 	/**
-	 * 
-	 * 
-	 * @var unknown_type
-	 */
-	private $interceptTypeToMethodToGroupMap = array();
-	
-	/**
-	 * 
-	 * @param stdClass $methodClassInstance
+     * Tell the wrapper which groups it should take from the results and pass
+     * to each method for a given interceptType
+     *
+     * There are intercept Types.
+     *
+	 * @param \Zend\ServiceManager\ServiceManager $serviceManager holding
 	 * @param array $mapping
-	 * @return unknown_type
+	 * @return void 
 	 */
-	public function __construct($methodClassInstance, array $mapping)
+	public function __construct(\Zend\ServiceManager\ServiceManager $serviceManager, array $mapping)
 	{
-		////Out::l2('created a method wrapper' . "\n");
+        $this->setServiceManager($serviceManager);
+
 		if (empty($mapping)) {
 			throw new Wrapper\Exception('the mapping passed is empty');
 		}
-		//reformat mapping, note that is being passed ordered by intercept type ASC, methodName ASC, regexGroup ASC
-		foreach ($mapping as $groupMap) {
-			$iT = (integer) $groupMap['interceptType'];
-			if ($iT !== self::INTERCEPT_TYPE_TOGETHER && $iT !== self::INTERCEPT_TYPE_ONEBYONE) {
-				throw new Wrapper\Exception('intercept type not supported');
-			}
-			if (!CMLoader::methodExists(get_class($methodClassInstance), $groupMap['methodName'])) {
-				throw new Wrapper\Exception('the method does not exist in method class, methodName : ' . $groupMap['methodName'] . ', methodClassInstance : ' . print_r($methodClassInstance, true));
-			}
-			if (!isset($this->interceptTypeToMethodToGroupMap[$iT])) {
-				$this->interceptTypeToMethodToGroupMap[$iT] = array();
-			}
-			if (!isset($this->interceptTypeToMethodToGroupMap[$iT][$groupMap['methodName']])) {
-				$this->interceptTypeToMethodToGroupMap[$iT][$groupMap['methodName']] = array();
-			}
-			$this->interceptTypeToMethodToGroupMap[$iT][$groupMap['methodName']][] = $groupMap['regexGroup'];
-		}
-		$this->methodClassInstance = $methodClassInstance;
+        $supportedInterceptTypes = array_keys($this->interceptTypeToHandleBy);
+        $this->initializeMethodCallSuite($mapping);
 	}
-	
+
+    /**
+     * Used for retrieving the invokable methods
+     *
+     * @return \Gbili\Miner\Action\Extract\Method\Wrapper 
+     */
+    public function setServiceManager(\Zend\ServiceManager\ServiceManager $sm)
+    {
+		$this->serviceManager = $sm;
+        return $this;
+    }
+
+    /**
+     * Used for retrieving the invokable methods
+     *
+	 * @return \Zend\ServiceManager\ServiceManager
+     */
+    public function getServiceManager()
+    {
+		$this->serviceManager;
+    }
+
+    /**
+     * Create the groups and associate them to the method call they will be passed to as args.
+     *
+     * Method calls are separated by priorities. This means that the same method can be
+     * called at diffrent times for the same resultset (although probably but not necesarily
+     * on different groups)
+     *
+     * Every priority can have different methods called in different types: TOGETHER or ONEBYONE
+     * Note that the same method can be called in different types: TOGETHER or ONEBYONE in the
+     * same priority
+     * The return array is:
+     * array(
+     *     <priority1> => array(
+     *         <INTERCEPT_TYPE1> => array(
+     *             <call_methodX> => array(group1,group2, group5...),
+     *             // different method is called in a same intercept type and 
+     *             // same priority (there is no way to know which method is called first 
+     *             <call_methodZ> => array(group1,group3, group3...),
+     *         ),
+     *         <INTERCEPT_TYPE2> => array(
+     *             // same method is called in a different intercept type and
+     *             // same priority (the priority is determined by the intercept type)
+     *             <call_methodX> => array(group1,group2, group5...), 
+     *         ),
+     *     ),
+     *     <priority2> => array(
+     *         <INTERCEPT_TYPE2> => array(
+     *             // same method is called in different or same intercept type and
+     *             // different priority (it will be called once all methods in 
+     *             // priority1 have been called)
+     *             <call_methodX> => array(group1,group2, group5...),
+     *         ),
+     *     ),
+     *
+     * Groups are added to the 
+     * @return \Gbili\Miner\Action\Extract\Method\Wrapper 
+     */
+    public function initializeMethodCallSuite(array $mapping)
+    {
+        foreach ($mapping as $groupMap) {
+            $priority = (integer) $groupMap['priority'];
+			$interceptType = (integer) $groupMap['interceptType'];
+            $invokableIdentifier = $groupMap['methodName'];
+
+			if (!$this->serviceManager->has($invokableIdentifier)) {
+				throw new Wrapper\Exception('the invokable does not exist in serviceManager, invokableIdentifier : ' . $invokableIdentifier);
+			}
+
+            if (!is_array($this->methodCallSuite[$priority]) {
+                $this->methodCallSuite[$priority] = array();
+            }
+
+            if (!isset($this->methodCallSuite[$priority][$interceptType]) {
+                $this->methodCallSuite[$priority][$interceptType] = array();
+            }
+
+			if (!isset($this->methodCallSuite[$priority][$interceptType][$invokableIdentifier])) {
+				$this->methodCallSuite[$priority][$interceptType][$invokableIdentifier] = array();
+			}
+
+			$this->methodCallSuite[$priority][$interceptType][$invokableIdentifier][] = $groupMap['regexGroup'];
+        }
+        ksort($this->methodCallSuite);
+        return $this;
+    }
+
 	/**
-	 * 
-	 * @param array $result
-	 * @return unknown_type
+	 * Given some output 
+     *
+	 * @param array $resultsArray the output of the action
+	 * @return array the array with the results intercepted
 	 */
 	public function intercept(array $resultsArray)
 	{
-		////Out::l2("MethodMethod is intercepting results : \n" . print_r($resultsArray, true));
-		//intercept the groups together and change the resultsArray to a single element array
-		if (isset($this->interceptTypeToMethodToGroupMap[self::INTERCEPT_TYPE_TOGETHER])) {
-			////Out::l2("intercepting groups together : \n" . print_r($this->interceptTypeToMethodToGroupMap[self::INTERCEPT_TYPE_TOGETHER], true));
-			foreach ($this->interceptTypeToMethodToGroupMap[self::INTERCEPT_TYPE_TOGETHER] as $methodName => $groups) {
-				$resultsArray = $this->interceptGroupsTogether($groups, $resultsArray, $methodName);
-			}
-		}
-		//results array has been modified by interceptGroupsTogether, so it may have less results
-		if (isset($this->interceptTypeToMethodToGroupMap[self::INTERCEPT_TYPE_ONEBYONE])) {
-			////Out::l2("intercepting groups one by one : \n" . print_r($this->interceptTypeToMethodToGroupMap[self::INTERCEPT_TYPE_ONEBYONE], true));
-			foreach ($this->interceptTypeToMethodToGroupMap[self::INTERCEPT_TYPE_ONEBYONE] as $methodName => $group) {
-				$resultsArray = $this->interceptGroupsOneByOne($group, $resultsArray, $methodName);
-			}
-		}
+        $priorities = array_keys($this->methodCallSuite);
+        foreach ($priorities as $priority) {
+            $resultsArray = $this->executeAllMethodsInPriority($priority, $resultsArray);
+        }
 		return $resultsArray;
 	}
+
+    /**
+     * All the methods that were registered in this priority are executed
+     * in their respective intercept type by passing the results array as arguments.
+     * @return array
+     */
+    protected function executeAllMethodsInPriority($priority, array $resultsArray)
+    {
+        foreach ($this->interceptTypeToHandleBy as $interceptType => $handleMethod) {
+            if (!isset($this->methodCallSuite[$priority][$interceptType])) continue;
+            foreach ($this->methodCallSuite[$priority][$interceptType] as $methodName => $groups) {
+                $resultsArray = $this->{$handleMethod}($groups, $resultsArray, $methodName);
+            }
+        }
+        return $resultsArray;
+    }
 	
 	/**
-	 * This function returns an array that combines
-	 * the elements of resultsArray that have the same
-	 * keys than the values in groups. It will unset
-	 * all groups in $resultsArray that are not the
-	 * lowest group. and replace the lowest group
-	 * with the method call result.
-	 * interceptConcernedGroupsAndReplaceSecondParamLowestGroupWithResult
+     * Get results with same keys as groups
+     * pass those results as param to $methodName
+     * save the result in a group with the lowest key number
+     * Intercept groups one by one won't modify the results array cardinality
+     * Intercept groups together will reduce cardinality to 1
+     *
 	 * 
-	 * @param unknown_type $groups
-	 * @param unknown_type $resultsArray
-	 * @return unknown_type
+	 * @param array $groups contains the keys of elements in $resultsArray that should be intercepted
+	 * @param array $resultsArray some of the values should be intercepted
+	 * @param string $methodName identifier of invokable() in servicemanager to which results should be passed for interception. 
+	 * @return array cardinality of results array will be reduced by (count(groups)-1)
 	 */
 	public function interceptGroupsTogether(array $groups, array $resultsArray, $methodName)
 	{
-		$concernedResults = array();
-		$lowestGroup = null;
-		foreach ($groups as $group) {
-			if (!isset($resultsArray[$group])) {
-				throw new Wrapper\Exception('One group is asked to be intercepted but it is not present in resultsArray anymore (or has never been). Remember that resultsArray looses all concerned groups that are not the lowest in a INTERCEPT_TYPE_TOGETHER call');
-			}
-			$concernedResults[] = $resultsArray[$group];
-			if ($lowestGroup === null) {
-				$lowestGroup = $group;
-			} else if ($group < $lowestGroup) {
-				unset($resultsArray[$lowestGroup]);
-				$lowestGroup = $group;
-			} else {
-				unset($resultsArray[$group]);
-			}
-		}
-		$resultsArray[$lowestGroup] = $this->methodClassInstance->$methodName($concernedResults);
-		return $resultsArray;
+        $lowestGroup = min($groups);
+        $groupsAsKeys = array_flip($groups);
+        $interceptedResults = array_intersect_key($resultsArray, $groupsAsKeys);
+        $notInterceptedResults = array_diff_key($resultsArray, $groupsAsKeys);
+        if (count($interceptedResults) !== count($groupsAsKeys)) {
+            throw new Wrapper\Exception(
+                'Some groups are asked to be intercepted but it is not present in resultsArray anymore (or has never been).'
+                . ' Remember that resultsArray looses all concerned groups that are not the lowest in a INTERCEPT_TYPE_TOGETHER call.'
+                . ' The groups are: ' . print_r(array_diff_key($groupsAsKeys, $resultsArray), true)
+            );
+        }
+        $returnedResults = $notInterceptedResults;
+        $invokable = $this->serviceManager->get($methodName);
+		$returnedResults[$lowestGroup] = $invokable($interceptedResults);
+		return $returnedResults;
 	}
 	
 	/**
-	 * This method applies the method to all results
+	 * This interception applies the methodName to each result
 	 * whose key is in $groups values (one at a time)
 	 * and replaces their value with the intercept result
+     *
+     * The result array will not change cardinality
 	 * 
-	 * @param array $groups
-	 * @param array $resultsArray
-	 * @param unknown_type $methodName
-	 * @return array
+	 * @param array $groups contains the keys of elements in $resultsArray that should be intercepted
+	 * @param array $resultsArray some of the values should be intercepted
+	 * @param string $methodName identifier of invokable() in servicemanager to which results should be passed for interception. 
+	 * @return array same cardinality as resultsArray
 	 */
 	public function interceptGroupsOneByOne(array $groups, array $resultsArray, $methodName)
 	{
@@ -142,7 +247,8 @@ class Wrapper
 				throw new Wrapper\Exception('One group is asked to be intercepted but it is not present in resultsArray anymore (or has never been). Remember that resultsArray looses all concerned groups that are not the lowest in a INTERCEPT_TYPE_TOGETHER call');
 			}
 			////Out::l2("intercepting result with group : $group, and value : " . print_r($resultsArray[$group], true) . "\n");
-			$resultsArray[$group] = $this->methodClassInstance->$methodName(array($resultsArray[$group]));//wrap the result in an array
+            $invokable = $this->serviceManager->get($methodName);
+			$resultsArray[$group] = $invokable(array($resultsArray[$group]));//wrap the result in an array
 		}
 		return $resultsArray;
 	}

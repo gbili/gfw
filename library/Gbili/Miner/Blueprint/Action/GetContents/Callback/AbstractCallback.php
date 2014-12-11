@@ -5,10 +5,10 @@ namespace Gbili\Miner\Blueprint\Action\GetContents\Callback;
  * The callback classess must extend this one in order to be considered
  * by the action execution
  * 
- * This will create an array that will be thought as callback() method arguments
+ * This will create an array that will be thought as callback() arguments
  * from a numerically indexed array which values are groups that map to the keys
  * of the second array which values are the actual input data for callback
- * The purpose of this array creation is to ensure the callback method will
+ * The purpose of this array creation is to ensure the callback will
  * know what means what. as when you would call func_get_args()
  * 
  * Every action gets an input and produces a result. Here the thing is
@@ -17,7 +17,7 @@ namespace Gbili\Miner\Blueprint\Action\GetContents\Callback;
  * 2. -string containing any type of info, from url to file_get_contents result
  * when the first case arises the input array(group=>result, group=>result, etc)
  * is passed to puzzleValuesWithKeys() along with $paramToGroupsArray wich maps
- * each group contained in the input array to an hipothetical parameter position
+ * each group contained in the input array to an hypothetical parameter position
  * in callback() function.
  * As you can see callback takes a numerically indexed array as input and every
  * position starting from 0 is considered an argument (somewhat of a protocol, that
@@ -41,10 +41,10 @@ abstract class AbstractCallback
 {	
 	/**
 	 * Is used to map each key in input to
-	 * a param position in callback method call
+	 * a param position in callback call
 	 * 
 	 * Contains an array of numerically indexed
-	 * keys from 0 to n, (corresponding to the param
+	 * keys from 0 to l-1, (corresponding to the param
 	 * position in the callback() call from the
 	 * Miner_Persistance_Blueprint_Action_GetContents_Callback_Abstract
 	 * extending class) pointing to the group
@@ -61,78 +61,59 @@ abstract class AbstractCallback
 	 * 
 	 * @var unknown_type
 	 */
-	private $methodToLoopReachedEndArray = array();
+	private $loopReachedEndArray = array();
 	
 	/**
 	 * 
 	 * @var unknown_type
 	 */
-	private $methodLoopIsFirstTime = array();
+	private $loopIsFirstTime = array();
 	
 	/**
 	 * 
 	 * @return unknown_type
 	 */
-	public function __constrcut(){}
+    public function __constrcut()
+    {
+    }
 	
 	/**
 	 * 
-	 * @param $methodName
 	 * @param $bool
 	 * @return unknown_type
 	 */
-	public function setMethodLoopReachedEndState($methodName, $bool)
+	public function setLoopReachedEndState($bool)
 	{
-		$this->throwIfMethodNotExists($methodName);
-		$this->methodToLoopReachedEndArray[$methodName] = (boolean) $bool;
+		$this->loopReachedEndArray = (boolean) $bool;
 	}
 	
 	/**
 	 * 
-	 * @param unknown_type $methodName
 	 * @return unknown_type
 	 */
-	public function getMethodLoopReachedEndState($methodName)
+	public function getLoopReachedEndState()
 	{
-		$this->throwIfMethodNotExists($methodName);
-		if (!isset($this->methodToLoopReachedEndArray[$methodName])) {
-			throw new Exception("the method $methodName of class " . get_class($this) . " did not set the methodLoopReachedEndState, maybe the method was not called yet or it is not calling setMethodLoopReachedEndState('$methodName', (boolean) \$bool) after executing.");		
+		if (!isset($this->loopReachedEndArray)) {
+			throw new Exception(get_class($this) . " did not set the loopReachedEndState, maybe the method was not called yet or it is not calling setLoopReachedEndState((boolean) \$bool) after executing.");		
 		}
-		return $this->methodToLoopReachedEndArray[$methodName];
+		return $this->loopReachedEndArray;
 	}
 	
 	/**
 	 * 
-	 * @param unknown_type $methodName
 	 * @return unknown_type
 	 */
-	public function setMethodLoopIsFirstTime($methodName, $bool)
+	public function setLoopIsFirstTime($bool)
 	{
-		$this->methodLoopFirstTime[$methodName] = (boolean) $bool;
+		$this->loopFirstTime = (boolean) $bool;
 	}
 	
 	/**
 	 * 
-	 * @param unknown_type $methodName
 	 * @return unknown_type
 	 */
-	public function isMethodLoopFirstTime($methodName)
+	public function isLoopFirstTime()
 	{
-		return $this->methodLoopFirstTime[$methodName];
-	}
-	
-	/**
-	 * 
-	 * @param unknown_type $methodName
-	 * @return unknown_type
-	 */
-	public function throwIfMethodNotExists($methodName)
-	{
-		if (!is_string($methodName)) {
-			throw new Exception('the methodNotExistsThrow() first param must be a string with the calling method name given : ' . print_r($methodName));
-		}
-		if (!method_exists($this, $methodName)) {
-			throw new Exception('the methodNotExistsThrow() first param must be the calling method name, the given does not exist in class : ' . print_r($methodName));
-		}
+		return $this->loopFirstTime;
 	}
 }

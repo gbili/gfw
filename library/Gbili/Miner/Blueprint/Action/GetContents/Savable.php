@@ -1,17 +1,17 @@
 <?php
 namespace Gbili\Miner\Blueprint\Action\GetContents;
 
-use Gbili\Miner\Blueprint\Action\Savable\AbstractSavable, 
-    Gbili\Miner\Blueprint\Action\CMLoader, 
-    Gbili\Miner\Blueprint;
-
 /**
- * 
+ * This class is meant for saving configuration
+ * as opposed to Gbili\Miner\Blueprint\Action\GetContents\Contents\Savable
+ * which is in turn used to save the actual data that the 
+ * action retrieves from the web when it is exectued
+ *
  * @author gui
  *
  */
 class Savable
-extends AbstractSavable
+extends \Gbili\Miner\Blueprint\Action\Savable\AbstractSavable
 {
 	/**
 	 * 
@@ -20,7 +20,7 @@ extends AbstractSavable
 	public function __construct()
 	{
 		parent::__construct();
-		$this->setElement('type', Blueprint::ACTION_TYPE_GETCONTENTS);
+		$this->setElement('type', \Gbili\Miner\Blueprint::ACTION_TYPE_GETCONTENTS);
 	}
 	
 	/**
@@ -45,21 +45,6 @@ extends AbstractSavable
 		}
 		if (!$this->hasBlueprint()) {
 			throw new Exception('The blueprint must be set in order tu map the action to its callback method');
-		}
-		if ($this->getBlueprint()->hasCallbackPath()) {
-			$path = $this->getBlueprint()->getCallbackPath();
-			$type = CMLoader::PATH_TYPE_DIRECT;
-		} else if ($this->getBlueprint()->hasBasePath()) {
-			$path = $this->getBlueprint()->getBasePath();
-			$type = CMLoader::PATH_TYPE_BASE;
-		} else {
-			throw new Exception('There is no way to find the callback class if no path is provided in blueprint');
-		}
-		if (!is_string(($className = CMLoader::loadCallbackClass($path, $this->getBlueprint()->getHost(), $type)))) {
-			throw new Exception('the class could not be loaded errors : ' . print_r(CMLoader::getErrors(), true));
-		}
-		if (false === CMLoader::methodExists($className, $methodName)) {
-			throw new Exception("the method '$methodName' does not exist in $className");
 		}
 		$this->setElement('callbackMethod', $methodName);
 		

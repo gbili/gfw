@@ -2,7 +2,11 @@
 namespace Gbili\Miner\Blueprint\Action\GetContents\Contents;
 
 /**
- * 
+ * Used to save the contents retrieved from the web.
+ * This allows for content caching. Instead of querying
+ * the web, we check if the contents are existent in
+ * local storage 
+ *
  * @author gui
  *
  */

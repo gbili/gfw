@@ -6,7 +6,7 @@ namespace Gbili\Miner\Blueprint\Action\GetContents\Callback;
  * subclasses.
  * 
  * This instantiates the subclass, sets the input mapping
- * and calls the callback() method and passes it the input
+ * and calls the callback() and passes it the input
  * 
  * @author gui
  *
@@ -18,7 +18,7 @@ class Wrapper
 
 	/**
 	 * Mapps the input groups to a parameter
-	 * number in the callback method
+	 * number in the callback
 	 * 
 	 * @var unknown_type
 	 */
@@ -26,39 +26,62 @@ class Wrapper
 	
 	/**
 	 * 
-	 * @var unknown_type
+	 * @var string 
 	 */
-	private $callbackInstance;
+	private $invokableIdentifier = null;
 	
 	/**
 	 * 
-	 * @var unknown_type
-	 */
-	private $methodName = null;
-	
-	/**
-	 * 
-	 * @var unknown_type
+	 * @var mixed: null|boolean 
 	 */
 	private $hasMoreLoops = null;
-	
+
+	/**
+	 * Contains all invokables 
+	 * 
+	 * @var \Zend\ServiceManager\ServiceManager
+	 */
+	private $serviceManager;
+
 	/**
 	 * Instantiates the right class and creates the params
-	 * array, that will be passed to the subclass applyCallback() method
-	 * 
-	 * @param unknown_type $callbackClassname
+	 * array, that will be passed to the subclass applyCallback() 
+     *
+	 * @param \Zend\ServiceManager\ServiceManager $serviceManager holding
 	 * @param array $paramToGroupArray
-	 * @return unknown_type
+	 * @return void 
 	 */
-	public function __construct(AbstractCallback $callbackInstance, $methodName)
+    public function __construct(\Zend\ServiceManager\ServiceManager $serviceManager, $invokableIdentifier)
 	{
-		$this->callbackInstance = $callbackInstance;
-		$this->callbackInstance->throwIfMethodNotExists($methodName);
-		$this->methodName = $methodName;
+        $this->setServiceManager($serviceManager);
+
+		$this->invokableIdentifier = $invokableIdentifier;
 		//initialize loop state
-		$this->callbackInstance->setMethodLoopReachedEndState($methodName, false);
-		$this->callbackInstance->setMethodLoopIsFirstTime($methodName, true);
+        $this->invokable = $this->getServiceManager()->get($invokableIdentifier);
+		$this->invokable->setLoopReachedEndState(false);
+		$this->invokable->setLoopIsFirstTime(true);
 	}
+
+    /**
+     * Used for retrieving the invokable 
+     *
+     * @return \Gbili\Miner\Action\Extract\Method\Wrapper 
+     */
+    public function setServiceManager(\Zend\ServiceManager\ServiceManager $sm)
+    {
+		$this->serviceManager = $sm;
+        return $this;
+    }
+
+    /**
+     * Used for retrieving the invokable 
+     *
+	 * @return \Zend\ServiceManager\ServiceManager
+     */
+    public function getServiceManager()
+    {
+		$this->serviceManager;
+    }
 	
 	/**
 	 * 
@@ -86,7 +109,7 @@ class Wrapper
 	{
 		//the callback was already applied and there are no more loops
 		if (!$this->hasMoreLoops()) {
-			throw new Wrapper\Exception("The loop in method : $thid->methodName reached end so cannot call apply anymore"); 
+			throw new Wrapper\Exception("The loop in method : $thid->invokableIdentifier reached end so cannot call apply anymore"); 
 		}
 		//create an array of numerically ordered params with the input
 		if (is_array($input)) {
@@ -99,14 +122,11 @@ class Wrapper
 		} else {
 			throw new Wrapper\Exception('You must either provide an array or a string to apply($input)');
 		}
-		//pas the ordered params array and call the callback
-		$mName = $this->methodName;
-		$callbackResult = $this->callbackInstance->$mName($orderedParams);
+		//pass the ordered params array and call the callback
+		$callbackResult = $this->invokable($orderedParams);
 		if (!is_string($callbackResult)) {
-			throw new Wrapper\Exception("The method $this->methodName() for class : " . print_r(get_class($this->callbackInstance), true) . ' must return a string. Current return value : ' . print_r($callbackResult, true));
+			throw new Wrapper\Exception("The invokable $this->invokableIdentifier must return a string. Current return value : " . print_r($callbackResult, true));
 		}
-		//the method should be setting its loop state throws otherwise
-		$this->hasMoreLoops = $this->hasMoreLoops();
 		return $callbackResult;
 	}
 	
@@ -140,8 +160,9 @@ class Wrapper
 	 */
 	public function rewindLoop()
 	{
-		$this->callbackInstance->setMethodLoopReachedEndState($this->methodName, false);
-		$this->__callbackInstance->setMethodLoopIsFirstTime($this->methodName, true);
+        $this->invokable
+            ->setLoopReachedEndState(false)
+            ->setLoopIsFirstTime(true);
 	}
 	
 	/**
@@ -153,9 +174,6 @@ class Wrapper
 	 */
 	public function hasMoreLoops()
 	{
-		if (null === $this->hasMoreLoops) {
-			return true;
-		}
-		return !$this->callbackInstance->getMethodLoopReachedEndState($this->methodName);
+		$this->hasMoreLoops = ((null === $this->hasMoreLoops) || !$this->invokable->getLoopReachedEndState());
 	}
 }

@@ -28,12 +28,7 @@ implements DbInterface
 	{
 		return $this->getResultSet("SELECT b.bId AS bId,
 									   b.newInstanceGeneratingPointActionId AS newInstanceGeneratingPointActionId,
-									   cm.path AS path,
-									   cm.pathType AS pathType,
-									   cm.classType AS classType
 									FROM Blueprint AS b 
-										LEFT JOIN Blueprint_CMPaths AS cm 
-											ON (b.bId = cm.bId)
 									WHERE b.host = :host",
 								  array(':host' => $host->toString()));
 	}
@@ -143,11 +138,12 @@ implements DbInterface
 		$sql = "SELECT m.name AS methodName,
 					   b.regexGroup AS regexGroup,
 					   b.interceptType AS interceptType
+					   b.priority AS priority 
 					FROM Blueprint_MethodMethod as m
 						LEFT JOIN BAction_RegexGroup_r_MethodMethod as b
 							ON (m.methodId = b.methodId)
 					WHERE b.bActionId = :actionId
-					ORDER BY b.interceptType ASC, m.name ASC, b.regexGroup ASC";
+					ORDER BY b.priority ASC, m.name ASC, b.interceptType ASC, b.regexGroup ASC";
 		return $this->getResultSet($sql, array(':actionId' => $actionId));
 		
 	}

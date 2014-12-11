@@ -10,7 +10,6 @@
  */
 namespace Gbili\Miner\Blueprint\Savable\Db;
 
-use Gbili\Miner\Blueprint\Action\CMLoader;
 use Gbili\Db\Req\AbstractReq;
 use Gbili\Db\Registry;
 use Gbili\Db\Req\Exception;
@@ -48,47 +47,9 @@ class Req extends AbstractReq
 			$this->insertUpdateData($sql, 
 									array(':host' => $b->getHost()->toString()));
 			$res = $this->getAdapter()->lastInsertId();
-			//save the paths used in callbacks and methods
-			$this->savePaths($b, $res);
 		}
 		//set the blueprint id
 		$b->setId($res);
-	}
-	
-	/**
-	 * These are the paths where the Method and Callback classes files are
-	 * 
-	 * @param $b
-	 * @param $bId
-	 * @return unknown_type
-	 */
-	private function savePaths(BlueprintSavable $b, $bId)
-	{
-		$bId = (integer) $bId;
-		$sql = 'INSERT INTO Blueprint_CMPaths (bId, path, pathType, classType) VALUES (:bId, :path, :pathType, :classType)';
-		$paths = array();
-		if ($b->hasMethodPath()) {
-			$paths[] = array(':path' => $b->getMethodPath(),
-							 ':pathType' => CMLoader::PATH_TYPE_DIRECT,
-							 ':classType' => CMLoader::CLASS_TYPE_METHOD,
-							 ':bId' => $bId);
-		}
-		if ($b->hasCallbackPath()) {
-			$paths[] = array(':path' => $b->getCallbackPath(),
-							 ':pathType' => CMLoader::PATH_TYPE_DIRECT,
-							 ':classType' => CMLoader::CLASS_TYPE_CALLBACK,
-							 ':bId' => $bId);
-		}
-		if ($b->hasBasePath()) {
-			$paths[] = array(':path' => $b->getBasePath(),
-							 ':pathType' => CMLoader::PATH_TYPE_BASE,
-							 ':classType' => 0,
-							 ':bId' => $bId);
-		}
-		foreach ($paths as $path) {
-			$this->insertUpdateData($sql,
-									$path);
-		}
 	}
 	
 	/**

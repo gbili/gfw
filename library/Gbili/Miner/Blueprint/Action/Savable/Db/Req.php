@@ -79,14 +79,15 @@ extends AbstractReq
 	{
 		$sql = "INSERT
 				INTO BAction_RegexGroup_r_MethodMethod
-					(bActionId, regexGroup, methodId, interceptType) VALUES ";
+					(bActionId, regexGroup, methodId, interceptType, priority) VALUES ";
 		$varToValues = array();
 		foreach ($mapping as $k => $arr) {
-			$sql .= '(?, ?, ?, ?),';
+			$sql .= '(?, ?, ?, ?, ?),';
 			$varToValues[] = $actionId;
 			$varToValues[] = (integer) $arr['regexGroup'];//group integer
 			$varToValues[] = $this->saveMethodMethodAndGetId($arr['methodName'], $bId);
 			$varToValues[] = (integer) $arr['interceptType'];//optional is bool change it to 0 or 1
+			$varToValues[] = (integer) $arr['priority'];
 		}
 		$sql = mb_substr($sql, 0, -1); //remove the trailing ","
 		$this->insertUpdateData($sql, $varToValues);
@@ -279,8 +280,8 @@ extends AbstractReq
 		 * 3. save group result mapping (group to entity && group to method)
 		 */
 		if ($action->getType() === Blueprint::ACTION_TYPE_EXTRACT
-		 && $action->hasGRM()) {
-			$this->saveGRM($action);
+		 && $action->hasGroupResultMapping()) {
+			$this->saveGroupResultMapping($action);
 		}
 		
 		/*
@@ -318,13 +319,13 @@ extends AbstractReq
 	 * @param $a
 	 * @return unknown_type
 	 */
-	private function saveGRM(ExtractSavable $a)
+	private function saveGroupResultMapping(ExtractSavable $a)
 	{
-		if ($a->getGRM()->hasGroupToEntityMap()) {
-			$this->setActionGroupToEntityMapping($a->getGRM()->getGroupToEntityMap(), $a->getId());
+		if ($a->getGroupResultMapping()->hasGroupToEntityMap()) {
+			$this->setActionGroupToEntityMapping($a->getGroupResultMapping()->getGroupToEntityMap(), $a->getId());
 		}
-		if ($a->getGRM()->hasGroupToMethodMap()) {
-			$this->setActionGroupToMethodMethodMapping($a->getGRM()->getGroupToMethodMap(), $a->getId(), $a->getBlueprint()->getId());
+		if ($a->getGroupResultMapping()->hasGroupToMethodMap()) {
+			$this->setActionGroupToMethodMethodMapping($a->getGroupResultMapping()->getGroupToMethodMap(), $a->getId(), $a->getBlueprint()->getId());
 		}
 	}
 	

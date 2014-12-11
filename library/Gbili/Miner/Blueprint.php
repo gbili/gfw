@@ -3,14 +3,12 @@ namespace Gbili\Miner;
 
 use Gbili\Miner\Blueprint\Action\RootAction;
 use Gbili\Miner\Blueprint\Action\GetContents\RootGetContents;
-use Zend\ServiceManager\ServiceManager;
 
 
 use Gbili\Out\Out,
     Gbili\Url\Authority\Host,
     Gbili\Db\Registry                                                as DbRegistry,
     Gbili\Miner\Blueprint\Db\DbInterface,
-    Gbili\Miner\Blueprint\Action\CMLoader,
     Gbili\Miner\Blueprint\Action\AbstractAction,
     Gbili\Miner\Blueprint\Action\GetContents,
     Gbili\Miner\Blueprint\Action\Extract,
@@ -111,29 +109,9 @@ class Blueprint
 	
 	/**
 	 * 
-	 * @var unknown_type
-	 */
-	private $methodClassInstance = null;
-	
-	/**
-	 * 
-	 * @var unknown_type
-	 */
-	private $callbackClassInstance = null;
-	
-	/**
-	 * 
 	 * @var Host
 	 */
 	private $host;
-	
-	/**
-	 * ActionIds of actions injecting
-	 * other actions
-	 * 
-	 * @var unknown_type
-	 */
-    protected $injectingActionIds = array();
 	
 	/**
 	 * Will generate the actions chain from the action set
@@ -143,15 +121,14 @@ class Blueprint
 	 * @param Host $host
 	 * @return unknown_type
 	 */
-	public function __construct(Host $host, ServiceManager $sm)
+	public function __construct(Host $host, \Zend\ServiceManager\ServiceManager $sm)
 	{
-	    $this->serviceManager = $sm;
+	    $this->setServiceManager($sm);
 		$this->host = $host;
 		//get the blueprint info from db and set it in instance
 		$this->setInfo();
 		/*
-		 * after calling setInfo() $callbackClassInstance and 
-		 * $methodClassInstance must be set if available
+		 * after calling setInfo()
 		 * and there is new instance generating point action id
 		 * fetch the Db to get the action set
 		 */
@@ -185,7 +162,10 @@ class Blueprint
 	    foreach ($this->actionStack as $id => $action) {
     		$injectData = DbRegistry::getInstance('\Gbili\Miner\Blueprint')->getInjectionData($id);
 
-    		if (empty($injectData) || is_array($injectData)) continue;
+            // @todo Possible bug: || is_array() should probably be || !is_array()
+            // since $injectData is used as an array below this check
+            // @important changed || is_array() to || !is_array()
+    		if (empty($injectData) || !is_array($injectData)) continue; 
 
             $injectData               = current($injectData);
             $injectingAction          = $this->actionStack[$injectData['injectingActionId']];
@@ -196,11 +176,20 @@ class Blueprint
 	}
 	
 	/**
-	 * 
+	 * @return \Zend\ServiceManager\ServiceManager
 	 */
 	public function getServiceManager()
 	{
 	    return $this->serviceManager;
+	}
+
+	/**
+	 * @return 
+	 */
+	public function setServiceManager(\Zend\ServiceManager\ServiceManager $sm)
+	{
+	    $this->serviceManager = $sm;
+        return $this;
 	}
 	
 	/**
@@ -224,98 +213,45 @@ class Blueprint
 	    
 	    $this->currentAction->setTitle($row['title']);
 	    $this->currentAction->setId($row['actionId']);
-	    
+
 	    if ($this->currentAction->getId() === $this->newInstanceGeneratingPointActionId) {
 	        $this->currentAction->setAsNewInstanceGeneratingPoint();
 	    }
-	    
+   
 	    $this->actionStack[(integer) $row['actionId']] = $this->currentAction;
-	    
+   
 	    $this->chainToParentAndSetInputGroupIfExtract((integer) $row['parentId'], $row['inputGroup']);
-	    
+
 	    $this->currentAction->setBlueprint($this);
 	    return $this->currentAction;
 	}
 	
 	/**
-	 * Set the method and callback instances
 	 * and the new instance generating point action id
 	 * 
 	 * @return unknown_type
 	 */
 	private function setInfo()
 	{
-		$dbRegObj = DbRegistry::getInstance('\\Gbili\\Miner\\Blueprint');
-		if (!($dbRegObj instanceof DbInterface)) {
+		$dbReqObj = DbRegistry::getInstance('\\Gbili\\Miner\\Blueprint');
+		if (!($dbReqObj instanceof DbInterface)) {
 			throw new Exception('The DbRegistry must return an instanceof \\Gbili\\Miner\\Blueprint\\Db\\DbInterface');
 		}
-		$bRecordset = $dbRegObj->getBlueprintInfo($this->host);
+		$bRecordset = $dbReqObj->getBlueprintInfo($this->host);
 		if (false === $bRecordset) {
 			throw new Exception('The blueprint does not exist');
 		}
 		
-		foreach ($bRecordset as $record) {
-			//Out::l1($record);
-			if (!isset($record['path'])) { //if path is present all other should be too
-				break;
-			}
-			$this->loadCMClass($record['path'], (integer) $record['pathType'], (integer) $record['classType']);
-		}
-
         if (empty($bRecordset)) {
 			throw new Exception('There are no records in db');
         }
+
+        $record = current($recordset);
 
 		//set the new instance generating point action id
 		if (0 !== (integer) $record['newInstanceGeneratingPointActionId']) {
 		    $this->newInstanceGeneratingPointActionId = (integer) $record['newInstanceGeneratingPointActionId'];
 		}
-		
-	}
-	
-	/**
-	 * Instantiate callback and method classes using CM loader
-	 * 
-	 * @param unknown_type $path
-	 * @param unknown_type $pathType
-	 * @param unknown_type $classType
-	 * @return unknown_type
-	 */
-	private function loadCMClass($path, $pathType, $classType)
-	{	
-	    //hack for base path to try to load both class types
-		$classTypes = array(
-		    CMLoader::CLASS_TYPE_CALLBACK,
-		    CMLoader::CLASS_TYPE_METHOD
-		);
-		
-		if (CMLoader::PATH_TYPE_BASE !== $pathType) {
-		    $classTypes = array($classType);
-		}
-
-		foreach ($classTypes as $classType) {
-            $this->loadCMClassType($path, $pathType, $classType);
-		}
-	}
-	
-	/**
-	 * 
-	 * @param unknown_type $path
-	 * @param unknown_type $pathType
-	 * @param unknown_type $classType
-	 * @throws Exception
-	 */
-	private function loadCMClassType($path, $pathType, $classType)
-	{
-	    $className = CMLoader::loadCMClass($path, $this->host, $pathType, $classType);
-	    if (!is_string($className)) {
-	        throw new Exception("class not loaded : " . print_r(CMLoader::getErrors(), true));
-	    }
-	    if (CMLoader::CLASS_TYPE_CALLBACK === $classType) {
-	        $this->callbackClassInstance = new $className();
-	    } else {
-	        $this->methodClassInstance = new $className();
-	    }
 	}
 	
 	/**
@@ -355,13 +291,10 @@ class Blueprint
             return $this;
 		}
 
-		if (null === $this->callbackClassInstance) {
-		    throw new Exception('the current action extract wants to use method hook, but the blueprint did not manage to instantiate the method class');
-		}
 		$row = current($callbackInfo);
 		//Out::l1($row['methodName']);
 		//if the callbacInstance is null it will throw an exception because of param type hint
-		$cW = new GetContentsCallbackWrapper($this->callbackClassInstance, $row['methodName']);
+		$callbackWrapper = new GetContentsCallbackWrapper($this->getServiceManager(), $row['methodName']);
  
 		//not all callbacks have a mapping (ex: a root get contents that uses itself as input)
 		$callbackMapping = DbRegistry::getInstance($this)->getActionCallbackParamsToGroupMapping($info['actionId']);
@@ -376,8 +309,8 @@ class Blueprint
 		    //default group mapping
 		    $callbackParamGroupMapping = array(1);
 		}
-		$cW->setParamToGroupMapping($callbackParamGroupMapping);
-		$this->currentAction->setCallbackWrapper($cW);
+		$callbackWrapper->setParamToGroupMapping($callbackParamGroupMapping);
+		$this->currentAction->setCallbackWrapper($callbackWrapper);
 
         return $this;
     } 
@@ -417,40 +350,10 @@ class Blueprint
 		if (empty($interceptMap) || false === $interceptMap) {
 		    return $this;
 		}
-		
-		//Out::l2("uses intercept\n" . print_r($interceptMap, true));
-		if (null === $this->methodClassInstance) {
-		    throw new Exception('the current action extract wants to use method hook, but the blueprint did not manage to instantiate the method class');
-		}
-		$mW = new ExtractMethodWrapper($this->methodClassInstance, $interceptMap);
-		//Out::l1($this->methodClassInstance);
+		$mW = new ExtractMethodWrapper($this->getServiceManager(), $interceptMap);
 		$this->currentAction->setMethodWrapper($mW);
         return $this;
     }
-	
-	/**
-	 * 
-	 * @return unknown_type
-	 */
-	public function getCallbackInstance()
-	{
-		if (null === $this->callbackClassInstance) {
-			throw new Exception('There is no callback instance set in this blue print');
-		}
-		return $this->callbackClassInstance;
-	}
-	
-	/**
-	 * 
-	 * @return unknown_type
-	 */
-	public function getMethodInstance()
-	{
-		if (null === $this->methodClassInstance) {
-			throw new Exception('There is no callback instance set in this blue print');
-		}
-		return $this->methodClassInstance;
-	}
 	
 	/**
 	 * Chains the action to the right parent

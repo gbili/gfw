@@ -226,6 +226,7 @@ CREATE TABLE `BAction_RegexGroup_r_MethodMethod` (
   `methodId` int(10) unsigned NOT NULL default '0',
   `regexGroup` int(10) unsigned NOT NULL default '0',
   `interceptType` int(10) unsigned NOT NULL default '0',
+  `priority` int(10) unsigned NOT NULL default '0',
   PRIMARY KEY  (`bAMMId`)
 ) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -261,31 +262,6 @@ CREATE TABLE `Blueprint` (
 LOCK TABLES `Blueprint` WRITE;
 /*!40000 ALTER TABLE `Blueprint` DISABLE KEYS */;
 /*!40000 ALTER TABLE `Blueprint` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `Blueprint_CMPaths`
---
-
-DROP TABLE IF EXISTS `Blueprint_CMPaths`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `Blueprint_CMPaths` (
-  `bId` int(10) unsigned NOT NULL default '0',
-  `path` varchar(255) NOT NULL default '',
-  `pathType` int(10) unsigned NOT NULL default '0',
-  `classType` int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (`bId`,`pathType`,`classType`)
-) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `Blueprint_CMPaths`
---
-
-LOCK TABLES `Blueprint_CMPaths` WRITE;
-/*!40000 ALTER TABLE `Blueprint_CMPaths` DISABLE KEYS */;
-/*!40000 ALTER TABLE `Blueprint_CMPaths` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
