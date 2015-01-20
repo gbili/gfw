@@ -72,22 +72,55 @@ class Scriptalicious
         return $this;
     }
 
+    /**
+     * 
+     */
+    public function renderScriptAndDependencies($identifier)
+    {
+        return $this->render($this->dependencyManager->getIdentifierDependencies($identifier));
+    }
+
+    /**
+     * Render render all the scripts contained in dependencyManager
+     * in an ordered fashion
+     * @return string
+     */
     public function renderAll()
     {
+        return $this->render($this->dependencyManager->getOrdered());
+    }
+
+    /**
+     * Render render all the scripts in $identifiers in the same order
+     * @param $identifiers array 
+     * @return string
+     */
+    public function render(array $identifiers)
+    {
         $scripts = array();
-        foreach ($this->dependencyManager->getOrdered() as $identifier) {
-            if (isset($this->scripts[self::RENDER_TYPE_INLINE][$identifier])) {
-                $scriptHtml = $this->scripts[self::RENDER_TYPE_INLINE][$identifier];
-            } else if (isset($this->scripts[self::RENDER_TYPE_REFERENCED][$identifier])) {
-                $scriptHtml = '<script type="text/javascript" src="' . $this->scripts[self::RENDER_TYPE_REFERENCED][$identifier] . '"></script>';
-            } else {
-                throw new \Exception("Bad call to addDependency(myscript_depends_on, $identifier). The script identifier $identifier does not exist. Grep it and rename the dependency to an existing script: " . print_r($this->scripts, true) . '</br>dependencies:' . print_r($this->dependencyManager->getOrdered()));
-            }
-            if (isset($this->conditions[$identifier])) {
-                $scriptHtml = "<!--[if {$this->conditions[$identifier]}]>$scriptHtml<![endif]-->";
-            }
-            $scripts[] = $scriptHtml;
+        foreach ($identifiers as $identifier) {
+            $scripts[] = $this->renderScript($identifier);
         }
         return implode('', $scripts);
+    }
+
+    /**
+     * Render the single script identified by $identifier (no dependency resolution is made)
+     * @param $identifier string
+     * @return string
+     */
+    public function renderScript($identifier)
+    {
+        if (isset($this->scripts[self::RENDER_TYPE_INLINE][$identifier])) {
+            $scriptHtml = $this->scripts[self::RENDER_TYPE_INLINE][$identifier];
+        } else if (isset($this->scripts[self::RENDER_TYPE_REFERENCED][$identifier])) {
+            $scriptHtml = '<script type="text/javascript" src="' . $this->scripts[self::RENDER_TYPE_REFERENCED][$identifier] . '"></script>';
+        } else {
+            throw new \Exception("Bad call to addDependency(myscript_depends_on, $identifier). The script identifier $identifier does not exist. Grep it and rename the dependency to an existing script: " . print_r($this->scripts, true) . '</br>dependencies:' . print_r($this->dependencyManager->getOrdered()));
+        }
+        if (isset($this->conditions[$identifier])) {
+            $scriptHtml = "<!--[if {$this->conditions[$identifier]}]>$scriptHtml<![endif]-->";
+        }
+        return $scriptHtml;
     }
 }
