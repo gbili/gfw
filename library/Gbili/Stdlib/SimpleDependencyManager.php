@@ -182,11 +182,13 @@ class SimpleDependencyManager
         if (in_array($identifier, $resolved)) {
             return $rawDependencies;
         }
-        $identifierDependencies = $this->keyDependsOnValues[$identifier];
-        $rawDependencies = array_merge($rawDependencies, $identifierDependencies);
-        $resolved[] = $identifier;
-        foreach ($identifierDependencies as $dep) {
-            $rawDependencies = $this->getRawDependencies($dep, $resolved, $rawDependencies);
+        if (isset($this->keyDependsOnValues[$identifier])) {
+            $identifierDependencies = $this->keyDependsOnValues[$identifier];
+            $rawDependencies = array_merge($rawDependencies, $identifierDependencies);
+            $resolved[] = $identifier;
+            foreach ($identifierDependencies as $dep) {
+                $rawDependencies = $this->getRawDependencies($dep, $resolved, $rawDependencies);
+            }
         }
         return $rawDependencies;
     }
