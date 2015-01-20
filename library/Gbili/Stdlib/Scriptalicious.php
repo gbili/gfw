@@ -79,7 +79,10 @@ class Scriptalicious
      */
     public function renderScriptAndDependencies($identifier)
     {
-        return $this->render($this->dependencyManager->getIdentifierDependencies($identifier));
+        $deps = $this->dependencyManager->getIdentifierDependencies($identifier);
+        $idsToRender = $deps;
+        $idsToRender[] = $identifier;
+        return $this->render($idsToRender);
     }
 
     /**
