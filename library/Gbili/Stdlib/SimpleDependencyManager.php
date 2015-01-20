@@ -8,6 +8,8 @@ class SimpleDependencyManager
 {
     protected $ordered = array();
 
+    protected $isOrdered = false;
+
     protected $identifiers = array();
 
     protected $dependants = array();
@@ -70,6 +72,7 @@ class SimpleDependencyManager
 
         if (!$this->hasDependency($dependant, $dependedOn)) {
             $this->keyDependsOnValues[$dependant][] = $dependedOn;
+            $this->isOrdred = false;
         }
         return $this;
     }
@@ -91,6 +94,9 @@ class SimpleDependencyManager
 
     protected function orderDependencies()
     {
+        if ($this->isOrdered) {
+            return;
+        }
         //Printed first in any order
         $notDepending = $this->getNotDepending();
         $this->ordered = $notDepending;
@@ -104,6 +110,7 @@ class SimpleDependencyManager
         foreach ($onlyDepending as $identifier) {
             $this->ordered[] = $identifier;
         }
+        $this->isOrdered = true;
     }
 
     /**
@@ -155,5 +162,32 @@ class SimpleDependencyManager
             }
             $this->addToOrderedThoseWhoseDependencyIsAlreadyInOrdered($dependenciesNotInOrdered);
         }
+    }
+
+    /**
+     * Get the ordered dependencies for the identifier, nothing more
+     */
+    public function getIdentifierDependencies($identifier)
+    {
+        $this->orderDependencies();
+        $essentialDependencies = array_intersect($this->ordered, $this->getRawDependencies($identifier));
+        return $essentialDependencies;
+    }
+
+    /**
+     * Get an array of all the dependencies of identifier in any order or count
+     */
+    public function getRawDependencies($identifier, $resolved = array(), $rawDependencies = array())
+    {
+        if (in_array($identifier, $resolved)) {
+            return $rawDependencies;
+        }
+        $identifierDependencies = $this->keyDependsOnValues[$identifier];
+        $rawDependencies = array_merge($rawDependencies, $identifierDependencies);
+        $resolved[] = $identifier;
+        foreach ($identifierDependencies as $dep) {
+            $rawDependencies = $this->getRawDependencies($dep, $resolved, $rawDependencies);
+        }
+        return $rawDependencies;
     }
 }
