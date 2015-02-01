@@ -49,15 +49,15 @@ class Scriptalicious
         $this->scripts[self::RENDER_TYPE_REFERENCED] = array();
     }
 
-    public function setCheckFileExists($bool=true)
+    public function setCheckScriptExists($bool=true)
     {
-        $this->checkFileExists = (boolean) $bool;
+        $this->checkScriptExists = (boolean) $bool;
         return $this;
     }
 
-    public function getCheckFileExists()
+    public function getCheckScriptExists()
     {
-        return $this->checkFileExists;
+        return $this->checkScriptExists;
     }
 
     public function setInstallMissing($bool=true)
