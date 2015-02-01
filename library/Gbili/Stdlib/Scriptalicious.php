@@ -28,10 +28,10 @@ class Scriptalicious
      *
      * @var boolean
      */
-    protected $checkFileExists = false;
+    protected $checkScriptExists = false;
 
     /**
-     * Only usefull if $checKFileExists == true
+     * Only usefull if $checKScriptExists == true
      * When set to true scriptalicious will install
      * the missing scripts in from their url
      *
