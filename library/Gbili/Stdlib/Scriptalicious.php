@@ -22,6 +22,23 @@ class Scriptalicious
     protected $conditions;
     protected $lastCallIdentifier;
 
+    /**
+     * When set to true scriptalicious checks whether
+     * the referenced script file exists
+     *
+     * @var boolean
+     */
+    protected $checkFileExists = false;
+
+    /**
+     * Only usefull if $checKFileExists == true
+     * When set to true scriptalicious will install
+     * the missing scripts in from their url
+     *
+     * @var boolean
+     */
+    protected $installMissing = false;
+
     protected $renderd = array();
 
     public function __construct()
@@ -32,6 +49,45 @@ class Scriptalicious
         $this->scripts[self::RENDER_TYPE_REFERENCED] = array();
     }
 
+    public function setCheckFileExists($bool=true)
+    {
+        $this->checkFileExists = (boolean) $bool;
+        return $this;
+    }
+
+    public function getCheckFileExists()
+    {
+        return $this->checkFileExists;
+    }
+
+    public function setInstallMissing($bool=true)
+    {
+        $this->installMissing = (boolean) $bool;
+        return $this;
+    }
+
+    public function getInstallMissing()
+    {
+        return $this->installMissing;
+    }
+
+    public function scriptExists($src)
+    {
+        if (!defined(PUBLIC_DIR)) {
+            throw new \Exception('You must set a constant PUBLIC_DIR, with the directory where the files should be installed');
+        }
+        return file_exists(PUBLIC_DIR . $src);
+    }
+
+    protected function handleMissingScript($scriptIdentifier, $script)
+    {
+        if ($this->getInstallMissing()) {
+            throw new \Exception('TO DEVELOP: create a class to store script src to download uri and curl it into src (here $script)');
+        } else {
+            echo "Missing script $scriptIdentifier: $script</br>";
+        }
+    }
+
     public function addInline($scriptIdentifier, $script)
     {
         return $this->addScript($scriptIdentifier, $script, self::RENDER_TYPE_INLINE);
@@ -39,6 +95,9 @@ class Scriptalicious
 
     public function addSrc($scriptIdentifier, $script)
     {
+        if ($this->getCheckScriptExists() && !$this->scriptExists($script)) {
+            $this->handleMissingScript($scriptIdentifier, $script);
+        }
         return $this->addScript($scriptIdentifier, $script, self::RENDER_TYPE_REFERENCED);
     }
 
