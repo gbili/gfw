@@ -193,7 +193,7 @@ class Scriptalicious
         if (isset($this->scripts[self::RENDER_TYPE_INLINE][$identifier])) {
             $scriptHtml = $this->scripts[self::RENDER_TYPE_INLINE][$identifier];
         } else if (isset($this->scripts[self::RENDER_TYPE_REFERENCED][$identifier])) {
-            $scriptHtml = '<script type="text/javascript" src="' . $this->scripts[self::RENDER_TYPE_REFERENCED][$identifier] . '"' . (($this->async[$identifier])? 'async' : '') . '></script>';
+            $scriptHtml = '<script type="text/javascript" src="' . $this->scripts[self::RENDER_TYPE_REFERENCED][$identifier] . '"' . (($this->async[$identifier])? ' async' : '') . '></script>';
         } else {
             throw new \Exception("Bad call to addDependency(myscript_depends_on, $identifier). The script identifier $identifier does not exist. Grep it and rename the dependency to an existing script: " . print_r($this->scripts, true) . '</br>dependencies:' . print_r($this->dependencyManager->getOrdered()));
         }
