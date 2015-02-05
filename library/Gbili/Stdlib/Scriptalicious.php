@@ -40,7 +40,7 @@ class Scriptalicious
      */
     protected $installMissing = false;
 
-    protected $renderd = array();
+    protected $rendered = array();
 
     public function __construct()
     {
