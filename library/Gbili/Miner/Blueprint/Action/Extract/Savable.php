@@ -57,12 +57,12 @@ extends AbstractSavable
 	
 	/**
 	 * 
-	 * @param GRM $b
+	 * @param GroupResultMapping $b
 	 * @return \Gbili\Miner\Blueprint\Action\Extract\Savable
 	 */
-	public function setGRM(GRM $b)
+	public function setGroupResultMapping(GroupResultMapping $b)
 	{
-		$this->setElement('gRM', $b);
+		$this->setElement('groupResultMapping', $b);
 		return $this;
 	}
 	
@@ -71,21 +71,21 @@ extends AbstractSavable
 	 * 
 	 * @return unknown_type
 	 */
-	public function getGRM()
+	public function getGroupResultMapping()
 	{
-		if (!$this->hasGRM()) {
-			$this->setGRM(new GRM());
+		if (!$this->hasGroupResultMapping()) {
+			$this->setGroupResultMapping(new GroupResultMapping());
 		}
-		return $this->getElement('gRM');
+		return $this->getElement('groupResultMapping');
 	}
 	
 	/**
 	 * 
 	 * @return unknown_type
 	 */
-	public function hasGRM()
+	public function hasGroupResultMapping()
 	{
-		return $this->isSetKey('gRM');
+		return $this->isSetKey('groupResultMapping');
 	}
 	
 	/**
@@ -112,7 +112,7 @@ extends AbstractSavable
 		}
 
 		//set mapping to entity
-		$this->getGRM()->spitGroupAsEntity($group, $entity, $isOptional);
+		$this->getGroupResultMapping()->spitGroupAsEntity($group, $entity, $isOptional);
 		
 		//allow the result to be intercepted before spitting,
 		//this can also be done by calling $this->interceptGroupsOneByOne
@@ -120,7 +120,7 @@ extends AbstractSavable
 			if (!is_string($resultInterceptMethod)) {
 				throw new Exception('$resultInterceptMethod (4th param) must be a string');
 			}
-			$this->getGRM()->interceptGroupsOneByOne($group, $resultInterceptMethod);
+			$this->getGroupResultMapping()->interceptGroupsOneByOne($group, $resultInterceptMethod);
 		}
 		return $this;
 	}
@@ -134,7 +134,7 @@ extends AbstractSavable
 	 */
 	public function interceptGroupsOneByOne($groups, $methodName)
 	{
-		$this->getGRM()->interceptGroupsOneByOne($groups, $methodName);
+		$this->getGroupResultMapping()->interceptGroupsOneByOne($groups, $methodName);
 		return $this;
 	}
 	
@@ -147,7 +147,7 @@ extends AbstractSavable
 	 */
 	public function interceptGroupsTogether(array $groups, $methodName)
 	{
-		$this->getGRM()->interceptGroupsTogether($groups, $methodName);
+		$this->getGroupResultMapping()->interceptGroupsTogether($groups, $methodName);
 		return $this;
 	}
 	

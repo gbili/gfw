@@ -164,9 +164,12 @@ extends AbstractAction
 	 */
 	protected function innerExecute()
 	{
-	    if ($this->isOptionalAndCannotGetInputFromGroupInExtractParent()) {
-	        return false;
-	    } 
+	    if ($this->parentIsExtractButDoesNotHaveTheInputGroupIAmReferringTo()) {
+            if (!$this->isOptional()) {
+                throw new \Exception('Referring to an input group that does not exist in extract parent resultset');
+            }
+            return false;
+	    }
 
 		$input = $this->getInput();
 

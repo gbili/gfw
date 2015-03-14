@@ -2,7 +2,7 @@
 namespace Gbili\Miner\Blueprint\Action\GetContents;
 
 use Gbili\Miner\Blueprint\Action\Savable\AbstractSavable, 
-    Gbili\Miner\Blueprint\Action\CMLoader, 
+    Gbili\Miner\Blueprint\Action\ClassMethodLoader, 
     Gbili\Miner\Blueprint;
 
 /**
@@ -48,17 +48,17 @@ extends AbstractSavable
 		}
 		if ($this->getBlueprint()->hasCallbackPath()) {
 			$path = $this->getBlueprint()->getCallbackPath();
-			$type = CMLoader::PATH_TYPE_DIRECT;
+			$type = ClassMethodLoader::PATH_TYPE_DIRECT;
 		} else if ($this->getBlueprint()->hasBasePath()) {
 			$path = $this->getBlueprint()->getBasePath();
-			$type = CMLoader::PATH_TYPE_BASE;
+			$type = ClassMethodLoader::PATH_TYPE_BASE;
 		} else {
 			throw new Exception('There is no way to find the callback class if no path is provided in blueprint');
 		}
-		if (!is_string(($className = CMLoader::loadCallbackClass($path, $this->getBlueprint()->getHost(), $type)))) {
-			throw new Exception('the class could not be loaded errors : ' . print_r(CMLoader::getErrors(), true));
+		if (!is_string(($className = ClassMethodLoader::loadCallbackClass($path, $this->getBlueprint()->getHost(), $type)))) {
+			throw new Exception('the class could not be loaded errors : ' . print_r(ClassMethodLoader::getErrors(), true));
 		}
-		if (false === CMLoader::methodExists($className, $methodName)) {
+		if (false === ClassMethodLoader::methodExists($className, $methodName)) {
 			throw new Exception("the method '$methodName' does not exist in $className");
 		}
 		$this->setElement('callbackMethod', $methodName);

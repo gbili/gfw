@@ -530,12 +530,11 @@ abstract class AbstractAction
 	 * 
 	 * @return boolean
 	 */
-	protected function isOptionalAndCannotGetInputFromGroupInExtractParent()
+	protected function parentIsExtractButDoesNotHaveTheInputGroupIAmReferringTo()
 	{
-	    return (true === $this->isOpt 
-    		  && $this->getParent() instanceof Extract 
+	    return ($this->getParent() instanceof Extract 
     	      && null !== $this->groupForInputData 
-    	      && false === ($res = $this->getParent()->hasGroup($this->groupForInputData)));
+    	      && !$this->getParent()->hasGroup($this->groupForInputData));
 	}
 	
 	/**

@@ -1,10 +1,8 @@
 <?php
 namespace Gbili\Miner;
 
-use Zend\ServiceManager\ServiceLocatorInterface;
-use Zend\EventManager\EventManagerAwareInterface;
-
 /**
+ *
  * Trying to avoid circular dependencies from
  * bootstraping in a service manager initializer
  * This should be called after objects have been
@@ -17,7 +15,7 @@ class ListenersAttacher
 {
     /**
      * Objects having listeners wanting to attach to them
-     * @var unknown_type
+     * @var array
      */
     protected $attachables = array();
     
@@ -25,15 +23,15 @@ class ListenersAttacher
     
     /**
      * From where to retrieve the listeners
-     * @var unknown_type
+     * @var \Zend\ServiceManager\ServiceLocatorInterface
      */
     protected $serviceManager = null;
 
     /**
      * 
-     * @param ServiceLocatorInterface $sm
+     * @param \Zend\ServiceManager\ServiceLocatorInterface $sm
      */
-    public function __construct(ServiceLocatorInterface $sm)
+    public function __construct(\Zend\ServiceManager\ServiceLocatorInterface $sm)
     {
         $this->serviceManager = $sm;
     }
@@ -45,7 +43,7 @@ class ListenersAttacher
     public function registerAttachable(AttachableListenersInterface $al)
     {
         echo "Registered Attachable " . get_class($al) . "\n";
-        if (!$al instanceof EventManagerAwareInterface) {
+        if (!$al instanceof \Zend\EventManager\EventManagerAwareInterface) {
             throw new Exception('registered instance having attachable listeners, must be an instanceof EventManagerAwareInterface');
         }
         foreach ($this->attachables as $attachable) {
@@ -55,7 +53,7 @@ class ListenersAttacher
         }
         $this->attachables[] = $al;
     }
-    
+
     /**
      * Attach listeners to their attachables
      */

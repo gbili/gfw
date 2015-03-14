@@ -6,6 +6,10 @@ use Zend\EventManager\EventInterface;
 use Zend\EventManager\ListenerAggregateTrait;
 use Zend\EventManager\ListenerAggregateInterface;
 
+/**
+ * Binds the Lexer to application events
+ * @author g
+ */
 class LexerListenerAggregate implements ListenerAggregateInterface
 {
     use ListenerAggregateTrait;

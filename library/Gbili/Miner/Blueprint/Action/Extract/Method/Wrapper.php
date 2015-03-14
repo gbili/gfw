@@ -1,8 +1,7 @@
 <?php
 namespace Gbili\Miner\Blueprint\Action\Extract\Method;
 
-use Gbili\Miner\Blueprint\Action\CMLoader;
-
+use Gbili\Miner\Blueprint\Action\ClassMethodLoader;
 use Gbili\Out\Out;
 
 /**
@@ -47,20 +46,20 @@ class Wrapper
 		}
 		//reformat mapping, note that is being passed ordered by intercept type ASC, methodName ASC, regexGroup ASC
 		foreach ($mapping as $groupMap) {
-			$iT = (integer) $groupMap['interceptType'];
-			if ($iT !== self::INTERCEPT_TYPE_TOGETHER && $iT !== self::INTERCEPT_TYPE_ONEBYONE) {
+			$interceptType = (integer) $groupMap['interceptType'];
+			if ($interceptType !== self::INTERCEPT_TYPE_TOGETHER && $interceptType !== self::INTERCEPT_TYPE_ONEBYONE) {
 				throw new Wrapper\Exception('intercept type not supported');
 			}
-			if (!CMLoader::methodExists(get_class($methodClassInstance), $groupMap['methodName'])) {
+			if (!ClassMethodLoader::methodExists(get_class($methodClassInstance), $groupMap['methodName'])) {
 				throw new Wrapper\Exception('the method does not exist in method class, methodName : ' . $groupMap['methodName'] . ', methodClassInstance : ' . print_r($methodClassInstance, true));
 			}
-			if (!isset($this->interceptTypeToMethodToGroupMap[$iT])) {
-				$this->interceptTypeToMethodToGroupMap[$iT] = array();
+			if (!isset($this->interceptTypeToMethodToGroupMap[$interceptType])) {
+				$this->interceptTypeToMethodToGroupMap[$interceptType] = array();
 			}
-			if (!isset($this->interceptTypeToMethodToGroupMap[$iT][$groupMap['methodName']])) {
-				$this->interceptTypeToMethodToGroupMap[$iT][$groupMap['methodName']] = array();
+			if (!isset($this->interceptTypeToMethodToGroupMap[$interceptType][$groupMap['methodName']])) {
+				$this->interceptTypeToMethodToGroupMap[$interceptType][$groupMap['methodName']] = array();
 			}
-			$this->interceptTypeToMethodToGroupMap[$iT][$groupMap['methodName']][] = $groupMap['regexGroup'];
+			$this->interceptTypeToMethodToGroupMap[$interceptType][$groupMap['methodName']][] = $groupMap['regexGroup'];
 		}
 		$this->methodClassInstance = $methodClassInstance;
 	}

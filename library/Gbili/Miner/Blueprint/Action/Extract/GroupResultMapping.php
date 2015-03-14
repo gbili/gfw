@@ -2,7 +2,7 @@
 namespace Gbili\Miner\Blueprint\Action\Extract;
 
 /**
- * GRM : Group Result Mapping
+ * GroupResultMapping : Group Result Mapping
  * 
  * On extract actions, the result groups can be intercepted
  * and spitted as final results.
@@ -32,7 +32,7 @@ namespace Gbili\Miner\Blueprint\Action\Extract;
  * @author gui
  *
  */
-class GRM
+class GroupResultMapping
 {	
 	/**
 	 * Contains the group numbers that have been
@@ -100,14 +100,14 @@ class GRM
 	public function spitGroupAsEntity($group, $entity, $isOptional)
 	{
 		if (!is_int($entity)) {
-			throw new GRM\Exception('$entity must be an integer');
+			throw new GroupResultMapping\Exception('$entity must be an integer');
 		}
 		if (!is_bool($isOptional)) {
-			throw new GRM\Exception('$isOptional must be a boolean');
+			throw new GroupResultMapping\Exception('$isOptional must be a boolean');
 		}
 		//make sure groups are not repeated
 		if (in_array($group, $this->groupsAlreadyIntercepted)) {
-			throw new GRM\Exception("The group : '$group' is already set in the basket");
+			throw new GroupResultMapping\Exception("The group : '$group' is already set in the basket");
 		} else {
 			$this->groupsMappedToSomeEntity[] = $group;
 		}
@@ -151,18 +151,18 @@ class GRM
 	private function addToInterceptMap(array $groups, $methodName, $interceptType)
 	{
 		if (!is_string($methodName)) {
-			throw new GRM\Exception('the methodName must be a string given : ' . print_r($methodName, true));
+			throw new GroupResultMapping\Exception('the methodName must be a string given : ' . print_r($methodName, true));
 		}
 
 		$lowestGroup = false;
 		foreach ($groups as $group) {
 			if (!is_numeric($group)) {
-				throw new GRM\Exception('the groups must be passed as a numeric value in an array given : ' . print_r($groups, true));
+				throw new GroupResultMapping\Exception('the groups must be passed as a numeric value in an array given : ' . print_r($groups, true));
 			}
 			$group = (integer) $group;
 			//only allow one intercept per group per intercept type
 			if (in_array($group, $this->groupsAlreadyIntercepted[$interceptType])) {
-				throw new GRM\Exception('you can intercept a group only once per intercept type');
+				throw new GroupResultMapping\Exception('you can intercept a group only once per intercept type');
 			}
 			//add the group to intercepted
 			$this->groupsAlreadyIntercepted[$interceptType][] = $group;
@@ -191,7 +191,7 @@ class GRM
 		if (!empty($this->groupsAlreadyIntercepted[Method\Wrapper::INTERCEPT_TYPE_TOGETHER])) {
 			$a = array_intersect($this->groupsMappedToSomeEntity, $this->desapearingGroups);
 			if (!empty($a)) {
-				throw new GRM\Exception('some groups whose destiny is to desapear are mapped to some entity, groups : ' . print_r($a, true));
+				throw new GroupResultMapping\Exception('some groups whose destiny is to desapear are mapped to some entity, groups : ' . print_r($a, true));
 			}
 		}
 		$this->integrityChecked = true;

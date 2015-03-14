@@ -2,11 +2,7 @@
 namespace Gbili\Miner\Blueprint\Action;
 
 use Gbili\Miner\Blueprint\Action\Extract\Method\Wrapper;
-use Gbili\Regex\String\AbstractString;
-use Gbili\Regex\String\Generic;
 use Gbili\Out\Out;
-use Gbili\Regex\Regex;
-
 
 /**
  * This class is meant to extract meaningfull data (data associated to its meaning)
@@ -23,7 +19,7 @@ class Extract extends AbstractAction
 	 * @var Miner_Persistance_Regex_String_Abstract
 	 */
 	private $regexStr;
-	
+
 	/**
 	 * Tells whether the array contained in $results
 	 * must be used for muyltiple Video Entities
@@ -34,52 +30,52 @@ class Extract extends AbstractAction
 	 * @var boolean
 	 */
 	private $useMatchAll;
-	
+
 	/**
 	 * Contains the regex instance from where all results are fetched
 	 * 
-	 * @var Regex
+	 * @var \Gbili\Regex\Regex
 	 */
 	private $regex;
-	
+
 	/**
 	 * Maps each group of the regex, to an entity
 	 * (a final result)
 	 * @var unknown_type
 	 */
 	private $groupToEntityArray;
-	
+
 	/**
 	 * Tells if getResult() can be called
 	 * 
 	 * @var unknown_type
 	 */
 	private $isResultReady;
-	
+
 	/**
 	 * 
 	 * @var unknown_type
 	 */
 	private $hasFinalResults = false;
-	
+
 	/**
 	 * 
 	 * @var unknown_type
 	 */
 	private $hasChildAction = null;
-	
+
 	/**
 	 * 
 	 * @var unknown_type
 	 */
 	private $currentChildAction = null;
-	
+
 	/**
 	 * 
 	 * @var unknown_type
 	 */
 	private $nextStep = null;
-	
+
 	/**
 	 * Contains the method wrapper that will
 	 * intercept the results
@@ -100,9 +96,9 @@ class Extract extends AbstractAction
 	{
 		parent::__construct();
 		if (is_string($regexStr)) {
-			$regexStr = new Generic($regexStr);
+			$regexStr = new \Gbili\Regex\String\Generic($regexStr);
 		}
-		if (!($regexStr instanceof AbstractString)) {
+		if (!($regexStr instanceof \Gbili\Regex\String\AbstractString)) {
 			throw new Extract\Exception('Action extract constructor first parameter must be of type string or instance of Regex_String_Abstract');
 		}
 		$this->regexStr    = $regexStr;
@@ -135,7 +131,7 @@ class Extract extends AbstractAction
 	 * and it will be used as input data for the child action
 	 * 
 	 * @param $groupToEntity
-	 * @return unknown_type
+	 * @return void 
 	 */
 	public function setGroupMapping(array $groupToEntityArray)
 	{
@@ -186,7 +182,7 @@ class Extract extends AbstractAction
 	    }
 	    return $entityToResult;
 	}
-	
+
 	/**
 	 * Make regex object contain some results
 	 * 1. Has been executed
@@ -195,7 +191,7 @@ class Extract extends AbstractAction
 	 * 2. Has not been executed
 	 * 		a. is MatchAll
 	 * 		b. is not MatchAll
-	 * @todo having a property interceptedResults, would avoid reinterceptation on every call to getResult, if that property existed, it should be set to null on every exec 
+	 * @todo having a property interceptedResults, would avoid reinterception on every call to getResult, if that property existed, it should be set to null on every exec 
 	 * @note isResultReady replaces isExecuted
 	 * @return boolean
 	 */
@@ -204,20 +200,23 @@ class Extract extends AbstractAction
 	    if ($this->isExecuted()) {
 	        return $this->manageMatchAllEarlierResults();
 	    }
-	    
-	    if ($this->isOptionalAndCannotGetInputFromGroupInExtractParent()) {
-	        return false;
-	    } 
+
+	    if ($this->parentIsExtractButDoesNotHaveTheInputGroupIAmReferringTo()) {
+            if (!$this->isOptional()) {
+                throw new \Exception('Referring to an input group that does not exist in extract parent resultset');
+            }
+            return false;
+	    }
     	
 		$parentInput     = $this->getInput();
-		$this->regex     = new Regex($parentInput, $this->regexStr);
-		$this->lastInput = $this->regex->getInputString();
+		$this->regex     = new \Gbili\Regex\Regex($parentInput, $this->regexStr);
+		$this->lastInput = $parentInput;
 		
 		$method = ($this->useMatchAll)? 'matchAll' : 'match';
 		return $this->isResultReady = (boolean) $this->regex->{$method}();
 		//@todo after the regex is applied, a callback should be allowed to attempt to refactor the output
 	}
-	
+
 	/**
 	 * 
 	 * @throws Exception
@@ -229,7 +228,7 @@ class Extract extends AbstractAction
     	}
 	    return $this->getParent()->getResult($this->groupForInputData);
 	}
-	
+
 	/**
 	 * 
 	 * @return boolean
@@ -238,7 +237,7 @@ class Extract extends AbstractAction
 	{
 	    return !($this->getParent() instanceof Extract && null === $this->groupForInputData);
 	}
-	
+
 	/**
 	 * When when the extract instance has already been
 	 * executed, it _should be_ because it is using matchAll.
@@ -255,7 +254,7 @@ class Extract extends AbstractAction
 	    }
 	    return $this->isResultReady = $this->regex->goToNextMatch();
 	}
-	
+
 	/**	
 	 * 
 	 */
@@ -276,18 +275,18 @@ class Extract extends AbstractAction
 
 		return $res[$groupIdentifier];	
 	}
-	
+
 	/**
 	 * 
-	 * @param unknown_type $groupIdentifier
-	 * @return unknown_type
+	 * @param mixed:integer|string $groupIdentifier
+	 * @return boolean
 	 */
 	public function hasGroup($groupIdentifier)
 	{
 	    $this->isResultReadyOrThrow();
 		return $this->regex->hasGroup($groupIdentifier);
 	}
-	
+
 	/**
 	 * Return all the results
 	 * 
@@ -299,7 +298,7 @@ class Extract extends AbstractAction
 		//return all groups of current match, if match all only get current match
 		return $this->getResultsAllowInterception();
 	}
-	
+
 	/**
 	 * Allow the user to intercept the results and modify them with some method
 	 * @return \Gbili\Miner\Blueprint\Action\
@@ -309,7 +308,7 @@ class Extract extends AbstractAction
         $results = $this->regex->getCurrentMatch();
 	    return (null === $this->methodWrapper)? $results : $this->methodWrapper->intercept($results);
 	}
-	
+
 	/**
 	 * 
 	 * @throws Extract\Exception

@@ -11,7 +11,7 @@ use Gbili\Url\Authority\Host;
  * @author gui
  *
  */
-class CMLoader
+class ClassMethodLoader
 {
 	/**
 	 * cannot be 0
@@ -81,7 +81,7 @@ class CMLoader
 			$classNameOrObject = get_class($classNameOrObject);
 		}
 		if (!in_array($classNameOrObject, self::$loadedClasses)) {
-			throw new CMLoader\Exception('the class is not loaded yet, load the class and then make sure the method exists');
+			throw new ClassMethodLoader\Exception('the class is not loaded yet, load the class and then make sure the method exists');
 		}
 		return method_exists($classNameOrObject, $methodName);
 	}
@@ -97,10 +97,10 @@ class CMLoader
 	public static function loadCMClass($path, Host $host, $pathType = self::PATH_TYPE_DIRECT, $classType = self::CLASS_TYPE_CALLBACK)
 	{
 		if (!is_string($path)) {
-			throw new CMLoader\Exception('the path must be a string');
+			throw new ClassMethodLoader\Exception('the path must be a string');
 		}
 		if ($pathType !== self::PATH_TYPE_BASE && $pathType !== self::PATH_TYPE_DIRECT) {
-			throw new CMLoader\Exception('the path type must be : Miner_Persistance_Blueprint_Action_CMLoader::PATH_TYPE_DIRECT or Miner_Persistance_Blueprint_Action_CMLoader::PATH_TYPE_BASE');
+			throw new ClassMethodLoader\Exception('the path type must be : Miner_Persistance_Blueprint_Action_ClassMethodLoader::PATH_TYPE_DIRECT or Miner_Persistance_Blueprint_Action_ClassMethodLoader::PATH_TYPE_BASE');
 		}
 		if (DIRECTORY_SEPARATOR !== mb_substr($path, -1)) {
 			$path .= DIRECTORY_SEPARATOR;

@@ -87,13 +87,18 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
         // Then we can easily attach all listeners without fearing circular
         // dependencies
         
+        //The ListenersAttacher has attachables from a ServiceManagerConfig initializer
+        //If any retrieved service implements AttachableListenersInterface, the initializer
+        //will call ListenersAttacher::regsiterAttachable($myService) 
+        //Every regsiteredAttachable will be used to call ListenersAttacher::attachListenersToAttachable($myService) 
+        //Then we retrieve all the listeners from every myService, and attach them to the service's event manager
         $serviceManager->get('ListenersAttacher')->attach();
         return $application;
     }
     
 	/**
-	 * 
-	 * @param unknown_type $listeners
+	 * Listeners can be added to the Application. They will be attached by self::init()
+	 * @param array $listeners
 	 */
 	public function addListeners($listeners = array())
 	{
@@ -146,7 +151,7 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
     protected function executeAction()
     {
         $this->triggerEvent(    __FUNCTION__ . '.pre');
-        
+
         if ($this->getThread()->getAction()->execute()) {
             $this->triggerEvent(__FUNCTION__ . '.success');
             $this->manageExecutedAction();
@@ -183,7 +188,6 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
     public function manageFail()
     {
         $responses = $this->triggerEvent(__FUNCTION__ . '.normalAction');
-        var_dump($responses);
         return !$responses->stopped() && $this->flowEvaluator->attemptFailRecovery();
     }
     

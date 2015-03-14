@@ -10,7 +10,7 @@
  */
 namespace Gbili\Miner\Blueprint\Savable\Db;
 
-use Gbili\Miner\Blueprint\Action\CMLoader;
+use Gbili\Miner\Blueprint\Action\ClassMethodLoader;
 use Gbili\Db\Req\AbstractReq;
 use Gbili\Db\Registry;
 use Gbili\Db\Req\Exception;
@@ -69,19 +69,19 @@ class Req extends AbstractReq
 		$paths = array();
 		if ($b->hasMethodPath()) {
 			$paths[] = array(':path' => $b->getMethodPath(),
-							 ':pathType' => CMLoader::PATH_TYPE_DIRECT,
-							 ':classType' => CMLoader::CLASS_TYPE_METHOD,
+							 ':pathType' => ClassMethodLoader::PATH_TYPE_DIRECT,
+							 ':classType' => ClassMethodLoader::CLASS_TYPE_METHOD,
 							 ':bId' => $bId);
 		}
 		if ($b->hasCallbackPath()) {
 			$paths[] = array(':path' => $b->getCallbackPath(),
-							 ':pathType' => CMLoader::PATH_TYPE_DIRECT,
-							 ':classType' => CMLoader::CLASS_TYPE_CALLBACK,
+							 ':pathType' => ClassMethodLoader::PATH_TYPE_DIRECT,
+							 ':classType' => ClassMethodLoader::CLASS_TYPE_CALLBACK,
 							 ':bId' => $bId);
 		}
 		if ($b->hasBasePath()) {
 			$paths[] = array(':path' => $b->getBasePath(),
-							 ':pathType' => CMLoader::PATH_TYPE_BASE,
+							 ':pathType' => ClassMethodLoader::PATH_TYPE_BASE,
 							 ':classType' => 0,
 							 ':bId' => $bId);
 		}

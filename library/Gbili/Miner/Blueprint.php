@@ -10,7 +10,7 @@ use Gbili\Out\Out,
     Gbili\Url\Authority\Host,
     Gbili\Db\Registry                                                as DbRegistry,
     Gbili\Miner\Blueprint\Db\DbInterface,
-    Gbili\Miner\Blueprint\Action\CMLoader,
+    Gbili\Miner\Blueprint\Action\ClassMethodLoader,
     Gbili\Miner\Blueprint\Action\AbstractAction,
     Gbili\Miner\Blueprint\Action\GetContents,
     Gbili\Miner\Blueprint\Action\Extract,
@@ -285,11 +285,11 @@ class Blueprint
 	{	
 	    //hack for base path to try to load both class types
 		$classTypes = array(
-		    CMLoader::CLASS_TYPE_CALLBACK,
-		    CMLoader::CLASS_TYPE_METHOD
+		    ClassMethodLoader::CLASS_TYPE_CALLBACK,
+		    ClassMethodLoader::CLASS_TYPE_METHOD
 		);
 		
-		if (CMLoader::PATH_TYPE_BASE !== $pathType) {
+		if (ClassMethodLoader::PATH_TYPE_BASE !== $pathType) {
 		    $classTypes = array($classType);
 		}
 
@@ -307,11 +307,11 @@ class Blueprint
 	 */
 	private function loadCMClassType($path, $pathType, $classType)
 	{
-	    $className = CMLoader::loadCMClass($path, $this->host, $pathType, $classType);
+	    $className = ClassMethodLoader::loadCMClass($path, $this->host, $pathType, $classType);
 	    if (!is_string($className)) {
-	        throw new Exception("class not loaded : " . print_r(CMLoader::getErrors(), true));
+	        throw new Exception("class not loaded : " . print_r(ClassMethodLoader::getErrors(), true));
 	    }
-	    if (CMLoader::CLASS_TYPE_CALLBACK === $classType) {
+	    if (ClassMethodLoader::CLASS_TYPE_CALLBACK === $classType) {
 	        $this->callbackClassInstance = new $className();
 	    } else {
 	        $this->methodClassInstance = new $className();

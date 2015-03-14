@@ -2,7 +2,6 @@
 namespace Gbili\Stdlib\Gauge\StopPropagation;
 
 use Gbili\Stdlib\Gauge\Gauge;
-use Zend\EventManager\EventInterface;
 
 class StopPropagationGauge extends Gauge
 {
@@ -27,9 +26,9 @@ class StopPropagationGauge extends Gauge
     /**
      * 
      * @param unknown_type $type
-     * @param EventInterface $e
+     * @param Zend\EventManager\EventInterface $e
      */
-    protected function operation($type, EventInterface $e)
+    protected function operation($type, \Zend\EventManager\EventInterface $e)
     {
         if (!$number = $e->getParam('number', false)) {
             $ret = parent::{$type}();
