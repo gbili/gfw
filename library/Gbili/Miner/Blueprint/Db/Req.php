@@ -27,7 +27,7 @@ implements DbInterface
 	public function getBlueprintInfo(Host $host)
 	{
 		return $this->getResultSet("SELECT b.bId AS bId,
-									   b.newInstanceGeneratingPointActionId AS newInstanceGeneratingPointActionId,
+									   b.newInstanceGeneratingPointActionId AS newInstanceGeneratingPointActionId
 									FROM Blueprint AS b 
 									WHERE b.host = :host",
                                     array(':host' => $host->toString()));
@@ -110,8 +110,8 @@ implements DbInterface
 		return $this->getResultSet("SELECT c.methodName AS methodName,
                                            c.serviceIdentifier AS serviceIdentifier
 										FROM BAction_r_Callable AS b 
-                                           INNER_JOIN Callable AS c ON b.callableId = c.callableId
-                                        WHERE c.bActionId = :bActionId",
+                                           INNER JOIN Callable AS c ON b.callableId = c.callableId
+                                        WHERE b.bActionId = :bActionId",
 									array(':bActionId' => $actionId));
 	}
 
@@ -143,7 +143,7 @@ implements DbInterface
 					   b.interceptType AS interceptType
 					FROM Callable as c
 						LEFT JOIN BAction_RegexGroup_r_Callable as b
-							ON (m.callableId = b.callableId)
+							ON (c.callableId = b.callableId)
 					WHERE b.bActionId = :actionId
 					ORDER BY b.interceptType ASC, c.serviceIdentifier ASC, c.methodName ASC, b.regexGroup ASC";
 		return $this->getResultSet($sql, array(':actionId' => $actionId));
