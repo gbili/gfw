@@ -1,21 +1,15 @@
 <?php
 namespace Gbili\Miner\Service;
 
-use Gbili\Url\Authority\Host;
-use Gbili\Miner\Blueprint;
-
-use Zend\ServiceManager\ServiceLocatorInterface;
-use Zend\ServiceManager\FactoryInterface;
-
-class BlueprintFactory implements FactoryInterface
+class BlueprintFactory implements \Zend\ServiceManager\FactoryInterface
 {
     
     /**
      * 
-     * @param ServiceLocatorInterface $sm
+     * @param \Zend\ServiceManager\ServiceLocatorInterface $sm
      * @throws Exception
      */
-    public function createService(ServiceLocatorInterface $sm)
+    public function createService(\Zend\ServiceManager\ServiceLocatorInterface $sm)
     { 
         $config = $sm->get('ApplicationConfig');
         
@@ -25,12 +19,16 @@ class BlueprintFactory implements FactoryInterface
         $host = $config['host'];
         
         if (is_string($host)) {
-            $host = new Host($host);
+            $host = new \Gbili\Url\Authority\Host($host);
         }
-        
-        if (!$host instanceof Host) {
+
+        if (!$host instanceof \Gbili\Url\Authority\Host) {
             throw new Exception('First param must be a valid url string or a Host instance.');
         }
-        return new Blueprint($host, $sm);
+
+        $dbReq = \Gbili\Db\Registry::getInstance('\\Gbili\\Miner\\Blueprint');
+        $blueprint = new \Gbili\Miner\Blueprint($host, $sm, $dbReq);
+        $blueprint->init();
+        return $blueprint;
     }
 }

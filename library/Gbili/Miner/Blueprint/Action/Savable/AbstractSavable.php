@@ -29,6 +29,11 @@ abstract class AbstractSavable extends Savable
 	 */
 	const DEFAULT_INPUT_PARENT_REGEX_GROUP_NUMBER = 1;
 
+    public static function clearOrder()
+    {
+        self::$order = array();
+    }
+
 	/**
 	 * Change requestor class name
 	 * that will be used by Savable_Savable
@@ -200,7 +205,6 @@ abstract class AbstractSavable extends Savable
 	public function setBlueprint(BlueprintSavable $b)
 	{
 		$this->setElement('blueprint', $b);
-		
 		return $this;
 	}
 	

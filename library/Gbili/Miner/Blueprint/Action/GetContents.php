@@ -11,8 +11,6 @@ use Gbili\Encoding\Encoding;
  * converts the output to utf8 if needed
  * 
  * @author gui
- *
- *
  */
 class GetContents
 extends AbstractAction
@@ -31,30 +29,32 @@ extends AbstractAction
 	
 	/**
 	 * 
-	 * @param Miner_Persistance_Blueprint_Action_GetContents_Callback_Wrapper $cW
-	 * @return unknown_type
+	 * @param Miner\Persistance\Blueprint\Action\GetContents\Callback\Wrapper $cW
+	 * @return unknown\type
 	 */
 	public function setCallbackWrapper(Wrapper $cW)
 	{
 		$this->callbackWrapper = $cW;
+        return $this;
 	}
-	
-	/**
-	 * 
-	 * @return unknown_type
-	 */
-	public function getCallbackWrapper()
-	{
-		if (!$this->hasCallbackWrapper()) {
-			throw new Exception('The callback handler is not set');
-		}
-		return $this->callbackWrapper;
-	}
+
+    public function getCallbackWrapper()
+    {
+        if (!$this->hasCallbackWrapper()) {
+            throw new \Exception('has no callback wrapper');
+        }
+        return $this->callbackWrapper;
+    }
+
+    public function hasCallbackWrapper()
+    {
+        return null !== $this->callbackWrapper;
+    }
 	
 	/**
 	 * This type of action never has final results
 	 * (non-PHPdoc)
-	 * @see Blueprint/Miner_Persistance_Blueprint_Action#hasFinalResults()
+	 * @see Blueprint/Miner\Persistance\Blueprint\Action#hasFinalResults()
 	 */
 	public function hasFinalResults()
 	{
@@ -63,7 +63,7 @@ extends AbstractAction
 	
 	/**
 	 * (non-PHPdoc)
-	 * @see Blueprint/Miner_Persistance_Blueprint_Action#getResult($groupNumber)
+	 * @see Blueprint/Miner\Persistance\Blueprint\Action#getResult($groupNumber)
 	 */
 	public function getResult($groupNumber = null)
 	{
@@ -75,38 +75,29 @@ extends AbstractAction
 	
 	/**
 	 * 
-	 * @param unknown_type $action
-	 * @return unknown_type
+     * @todo  the input needs to be a string so: 
+     *        1st. check if action has been executed.
+     *        2nd A. if it is not the case, dont throw, instead allow event listeners to return a string.
+     *        2nd B. else if it returns some imput, pass it to the listeners and return a string
+     *
+	 * @return string 
 	 */
-	protected function getInputFromAction($action, $groupNumber)
+	protected function getInputFromAction()
 	{
-		if (!$action instanceof Extract) {
-			throw new Exception("Parent must be of type extract when not root");
-		}
-		if (!$action->isExecuted()) {
-		    throw new Exception('Trying to get input from action that has not been executed');
-		}
-		if ($this->hasCallbackWrapper()) {
-		    return $action->getResults();
-		}
-		if (null === $groupNumber) {
-		    throw new Exception("Action needs a string as input. Array is allowed only when using callback. As it is not the root action you must specify the groupForInputData so it can take a single element from the parent extract element");
-		}
-		return $action->getResult($groupNumber);
-	}
-	
-	/**
-	 * 
-	 * @return boolean
-	 */
-	protected function hasCallbackWrapper()
-	{
-	    return null !== $this->callbackWrapper;
+        $result = $this->getInputAction()->getResult($this->getInputGroup());
+        
+        //@todo pass the result to listeners and allow them to modify it
+
+        if ($result === null) {
+		    throw new Exception("Input action must be of type extract when not root, or Trying to get input from action that has not been executed");
+        }
+
+		return $result;
 	}
 	
 	/**
 	 * The input can come from three different places
-	 * -other action than parent : $otherInputAction & $otherActionGroupForInputData
+	 * -other action than parent
 	 * -lastInput (in case there is a cw) : $lastInput 
 	 * -parent : $inputGroup
 	 * 
@@ -118,49 +109,36 @@ extends AbstractAction
 	 * the flow changes for some loops, until the child cannot generate more
 	 * results. :/
 	 * 
-	 * @return unknown_type
+	 * @return unknown\type
 	 */
 	public function getInput()
 	{
-		if ($this->hasCallbackWrapper()) {
+		if ($this->canGetInputFromCallback()) {
             return $this->getInputFromCallback();
 		}
-
-		if ($this->needsInputFromOtherThanParent()) {
-	        return $this->getInputFromAction($this->otherInputAction, $this->otherActionGroupForInputData);
-		}
-		return $this->getInputFromAction($this->getParent(), $this->groupForInputData);
+		return $this->getInputFromAction();
 	}
 	
+    protected function canGetInputFromCallback()
+    {
+        return $this->hasCallbackWrapper() && $this->getCallbackWrapper()->hasMoreLoops() && null !== $this->lastInput;
+    }
+
 	/**
 	 * 
 	 * @throws Exception
 	 */
 	protected function getInputFromCallback()
 	{
-	    if (!$this->getCallbackWrapper()->hasMoreLoops() || null === $this->lastInput) {
-	        throw new Exception("loop reached end cannot execute anymore, call clear() || lastInput is null");
-	    }
-	    return $this->getCallbackWrapper()->apply($this->lastInput);
-	}
-	
-	/**
-	 * If it needs input from other than parent, make
-	 * sure the input action has been executed or
-	 * return that for the moment it does not need
-	 * input from other than parent... maybe later,
-	 * when the other action is executed
-	 * 
-	 * @return boolean
-	 */
-	protected function needsInputFromOtherThanParent()
-	{
-	    return null !== $this->otherInputAction && $this->otherInputAction->isExecuted();
+        if (!$this->canGetInputFromCallback()) {
+            throw new Exception("loop reached end cannot execute anymore, call clear() || lastInput is null");
+        }
+        return $this->getCallbackWrapper()->apply($this->lastInput);
 	}
 	
 	/**
 	 * 
-	 * @return unknown_type
+	 * @return unknown\type
 	 */
 	protected function innerExecute()
 	{
@@ -181,7 +159,7 @@ extends AbstractAction
 		$result = $this->getContents($url);
 		
 		if (false === $result) {
-			return $this->executionSucceed = false; //throw new Exception('file_get_contents() did not succeed, url : ' . print_r($url->toString(), true));
+			return $this->executionSucceed = false; //throw new Exception('file\get\contents() did not succeed, url : ' . print_r($url->toString(), true));
 		}
 		
 		$this->result     = $result;
@@ -215,7 +193,7 @@ extends AbstractAction
 	
 	/**
 	 * (non-PHPdoc)
-	 * @see Blueprint/Miner_Persistance_Blueprint_Action#clear()
+	 * @see Blueprint/Miner\Persistance\Blueprint\Action#clear()
 	 */
 	protected function innerClear()
 	{
@@ -236,10 +214,16 @@ extends AbstractAction
 	
 	/**
 	 * (non-PHPdoc)
-	 * @see Blueprint/Miner_Persistance_Blueprint_Action#spit()
+	 * @see Blueprint/Miner\Persistance\Blueprint\Action#spit()
 	 */
 	public function spit()
 	{
 		throw new Exception('GetContents actions never have final results, don\'t call spit().');
 	}
+
+    public function hydrate(array $info)
+    {
+        parent::hydrate($info);
+        $this->getBlueprint()->initCallbackWrapperForAction($this);
+    }
 }

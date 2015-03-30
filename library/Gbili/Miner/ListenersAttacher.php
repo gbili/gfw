@@ -46,9 +46,17 @@ class ListenersAttacher
         if (!$al instanceof \Zend\EventManager\EventManagerAwareInterface) {
             throw new Exception('registered instance having attachable listeners, must be an instanceof EventManagerAwareInterface');
         }
+        $this->addUniqueAttachable($al);
+    }
+
+    /**
+     * Do not add the same object twice
+     */
+    protected function addUniqueAttachable($al)
+    {
         foreach ($this->attachables as $attachable) {
             if ($attachable === $al) {
-                return; // Do not add the same object twice
+                return; 
             }
         }
         $this->attachables[] = $al;
@@ -65,7 +73,7 @@ class ListenersAttacher
             $this->processedAttachables[] = $attachable;
         }
     }
-    
+
     /**
      * 
      * @param unknown_type $attachable
@@ -77,7 +85,7 @@ class ListenersAttacher
         $listeners = array_unique($attachable->getListeners());
         foreach ($listeners as $listener) {
             echo "Listener $listener\n";
-            echo "Identifiers " . end($identifiers) . "\n";
+            echo "Identifiers " . implode(', ' , $identifiers) . "\n";
             $events->attach($this->serviceManager->get($listener));
         }
     }

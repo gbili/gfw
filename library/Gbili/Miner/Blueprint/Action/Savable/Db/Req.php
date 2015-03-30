@@ -75,17 +75,17 @@ extends AbstractReq
 	 * @param unknown_type $bId
 	 * @return unknown_type
 	 */
-	private function setActionGroupToMethodMethodMapping(array $mapping, $actionId, $bId)
+	private function setActionGroupToCallableMapping(array $mapping, $actionId, $bId)
 	{
 		$sql = "INSERT
-				INTO BAction_RegexGroup_r_MethodMethod
+				INTO BAction_RegexGroup_r_Callable
 					(bActionId, regexGroup, methodId, interceptType) VALUES ";
 		$varToValues = array();
 		foreach ($mapping as $k => $arr) {
 			$sql .= '(?, ?, ?, ?),';
 			$varToValues[] = $actionId;
 			$varToValues[] = (integer) $arr['regexGroup'];//group integer
-			$varToValues[] = $this->saveMethodMethodAndGetId($arr['methodName'], $bId);
+			$varToValues[] = $this->saveCallableAndGetId($arr['callable'], $bId);
 			$varToValues[] = (integer) $arr['interceptType'];//optional is bool change it to 0 or 1
 		}
 		$sql = mb_substr($sql, 0, -1); //remove the trailing ","
@@ -94,15 +94,15 @@ extends AbstractReq
 	
 	/**
 	 * 
-	 * @param unknown_type $methodName
+	 * @param unknown_type $callable
 	 * @param unknown_type $bId
 	 * @return unknown_type
 	 */
-	private function saveMethodMethodAndGetId($methodName, $bId)
+	private function saveCallableAndGetId($callable)
 	{
-		if (false === $id = $this->existsMethodMethod($methodName, $bId, true)) {
-			$sql = "INSERT INTO Blueprint_MethodMethod (bId, name) VALUES (:bId, :methodName)";
-			$this->insertUpdateData($sql, array('bId' => $bId,':methodName' => $methodName));
+		if (false === $id = $this->existsCallable($callable, true)) {
+			$sql = "INSERT INTO Blueprint_Callable (bId, name) VALUES (:bId, :callable)";
+			$this->insertUpdateData($sql, array('bId' => $bId,':callable' => $callable));
 			$id = $this->getAdapter()->lastInsertId();
 		}
 		return $id;
@@ -114,18 +114,17 @@ extends AbstractReq
 	 * @param unknown_type $bId
 	 * @param unknown_type $returnIdOrFalse
 	 * @return unknown_type
-	 */
-	private function existsMethodMethod($methodName, $bId, $returnIdOrFalse)
+	 *
+	private function existsCallable($callable, $returnIdOrFalse)
 	{
 		$sql = "SELECT m.methodId AS methodId
-					FROM Blueprint_MethodMethod AS m
+					FROM Callable AS m
 					WHERE m.bId = :bId AND m.name = :methodName";
 		return $this->existsElement($sql,
 									array(':bId' => (integer) $bId,
 										  ':methodName' => $methodName),
-									'methodId',
-									(boolean) $returnIdOrFalse);
-	}
+                                          (($returnIdOrFalse)? 'methodId' : null));
+	}*/
 	
 	/**
 	 * 
@@ -135,7 +134,7 @@ extends AbstractReq
 	 */
 	private function saveCallbackMapping(array $mapping, $actionId)
 	{
-		$sql = "INSERT INTO BAction_RegexGroup_r_CallbackMethod_ParamNum (bActionId, paramNum, regexGroup) VALUES ";
+		$sql = "INSERT INTO BAction_RegexGroup_r_Callable_ParamNum (bActionId, paramNum, regexGroup) VALUES ";
 		$varToValues = array();
 		foreach ($mapping as $paramNum => $group) {
 			$sql .= '(?, ?, ?),';
@@ -153,12 +152,36 @@ extends AbstractReq
 	 * @param unknown_type $actionId
 	 * @return unknown_type
 	 */
-	private function saveCallbackMethod($methodName, $actionId)
+	private function saveCallable($callable)
 	{
-		if (!$this->existsCallbackMethod($methodName, $actionId)) {
-			$sql = "INSERT INTO BAction_CallbackMethod (bActionId, methodName) VALUES (:actionId, :name)";
-			$this->insertUpdateData($sql, array(':actionId' => $actionId, ':name' => $methodName));
+		if ($id = $this->existsCallable($callable)) {
+            return $id;
 		}
+
+        $params = array();
+
+        if (is_string($callable)) {
+            $callable = array($callable);
+        }
+        if (!is_array($callable)) {
+            throw new \Exception('Callable must be string or array of strings');
+        }
+        switch (count($callable)) {
+            case 2;
+                list($serviceIdentifier, $methodName) = $callable;
+                $sql = "INSERT INTO Callable (serviceIdentifier, methodName) VALUES (:serviceIdentifier, :methodName)";
+                $params[':methodName'] = $methodName;
+                break;
+            case 1;
+                $sql = "INSERT INTO Callable (serviceIdentifier) VALUES (:serviceIdentifier)";
+                $serviceIdentifier = current($callable);
+                break;
+            default;                 
+                throw new \Exception('Callable array must contain serviceIdentifier and methodName if not directly invokable');
+                break;
+        }
+        $params[':serviceIdentifier'] = $serviceIdentifier;
+        $this->insertUpdateData($sql, $params);
 	}
 	
 	/**
@@ -167,12 +190,34 @@ extends AbstractReq
 	 * @param unknown_type $actionId
 	 * @return unknown_type
 	 */
-	private function existsCallbackMethod($methodName, $actionId)
+	private function existsCallable($callable)
 	{
 		$sql = "SELECT c.methodName AS methodName
-					FROM BAction_CallbackMethod AS c
-					WHERE c.bActionId = :actionId AND c.methodName = :methodName";
-		return (false !== $this->getResultSet($sql, array(':actionId' => (integer) $actionId, ':methodName' => $methodName)));
+					FROM Callable AS c
+					WHERE c.serviceIdentifier = :serviceIdentifier";
+        $params = array();
+
+        if (is_string($callable)) {
+            $callable = array($callable);
+        }
+        if (!is_array($callable)) {
+            throw new \Exception('Callable must be string or array of strings');
+        }
+        switch (count($callable)) {
+            case 2;
+                list($serviceIdentifier, $methodName) = $callable;
+                $sql .= ' AND c.methodName = :methodName';
+                $params[':methodName'] = $methodName;
+                break;
+            case 1;
+                $serviceIdentifier = current($callable);
+                break;
+            default;                 
+                throw new \Exception('Callable array must contain serviceIdentifier and methodName if not directly invokable');
+                break;
+        }
+        $params[':serviceIdentifier'] = $serviceIdentifier;
+		return $this->existsElement($sql, $params, 'callableId');
 	}
 	
 	/**
@@ -190,8 +235,7 @@ extends AbstractReq
 					WHERE a.bActionId = :actionId";
 		return $this->existsElement($sql,
 									array(':actionId' => (integer) $actionId),
-									'actionId',
-									(boolean) $returnIdOrFalse);
+									(($returnIdOrFalse)? 'actionId' : null));
 	}
 	
 	/**
@@ -287,7 +331,7 @@ extends AbstractReq
 		 * 4.1 particular insert only for type GetContents for setting callback
 		 */
 		if ($action->getType() === Blueprint::ACTION_TYPE_GETCONTENTS
-		 && $action->hasCallbackMethod()) {
+		 && $action->hasCallable()) {
 		 	$this->saveCallback($action);
 		}
 
@@ -306,11 +350,14 @@ extends AbstractReq
 	 */
 	private function saveInjection(AbstractSavable $action)
 	{
+        $injectedAction = $action->getInjectedAction();
 		$this->insertUpdateData("INSERT INTO BAction_r_InjectedBAction (bActionId, injectedActionId, inputGroup) VALUES (:id,:iId,:group)", 
 								array(':id'    => $action->getId(),
-									  ':iId'   => $action->getInjectedAction()->getId(),
-									  ':group' => (($action->getInjectedAction()->hasInjectInputGroup())? 
-														$action->getInjectedAction()->getInjectInputGroup() : 0)));
+									  ':iId'   => $injectedAction->getId(),
+                                      ':group' => (($injectedAction->hasInjectInputGroup())
+                                                      ? $injectedAction->getInjectInputGroup() 
+                                                      : 0)
+                                ));
 	}
 
 	/**
@@ -324,7 +371,7 @@ extends AbstractReq
 			$this->setActionGroupToEntityMapping($a->getGroupResultMapping()->getGroupToEntityMap(), $a->getId());
 		}
 		if ($a->getGroupResultMapping()->hasGroupToMethodMap()) {
-			$this->setActionGroupToMethodMethodMapping($a->getGroupResultMapping()->getGroupToMethodMap(), $a->getId(), $a->getBlueprint()->getId());
+			$this->setActionGroupToCallableMapping($a->getGroupResultMapping()->getGroupToMethodMap(), $a->getId(), $a->getBlueprint()->getId());
 		}
 	}
 	
@@ -335,7 +382,7 @@ extends AbstractReq
 	 */
 	private function saveCallback(GetContentsSavable $a)
 	{
-		$this->saveCallbackMethod($a->getCallbackMethod(), $a->getId());
+		$this->saveCallable($a->getCallable());
 		if ($a->hasCallbackMap()) {
 			$this->saveCallbackMapping($a->getCallbackMap(), $a->getId());
 		}

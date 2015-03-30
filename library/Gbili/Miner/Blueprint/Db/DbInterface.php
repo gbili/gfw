@@ -51,7 +51,7 @@ interface DbInterface
 	 * @param unknown_type $actionId
 	 * @return array : 'methodName'
 	 */
-	public function getActionCallbackMethodName($actionId);
+	public function getActionCallable($actionId);
 	
 	/**
 	 * 
@@ -59,7 +59,7 @@ interface DbInterface
 	 * @return array : 'regexGroup',
 	 * 				   'paramNum'
 	 */
-	public function getActionCallbackParamsToGroupMapping($actionId);
+	public function getActionCallableParamsToGroupMapping($actionId);
 	
 	/**
 	 * 
@@ -68,5 +68,5 @@ interface DbInterface
 	 * 				   'regexGroup',
 	 * 				   'interceptType'
 	 */
-	public function getActionGroupToMethodNameAndInterceptType($actionId);
+	public function getActionGroupToCallableAndInterceptType($actionId);
 }

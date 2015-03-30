@@ -88,7 +88,7 @@ implements ActiveRecordInterface
 	 * E.g. id->number could be unique among instances
 	 * of the same class. So use setUniqueElement() 
 	 * Using late static binding to avoid
-	 * conflicts amond different subclasses
+	 * conflicts among different subclasses
 	 * 
 	 * @var multitype
 	 */
@@ -397,6 +397,7 @@ implements ActiveRecordInterface
 			$this->saveLoop(self::POST_SAVE_LOOP);
 		}
 		//Out::l3('<---closing--<POST SAVE LOOP <---------------< of '. get_class($this) . "\n");
+        self::$keysToUniqueValues = array();
 	}
 	
 	/**

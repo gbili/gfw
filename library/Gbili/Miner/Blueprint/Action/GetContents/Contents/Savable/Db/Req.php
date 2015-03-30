@@ -2,11 +2,10 @@
 namespace Gbili\Miner\Blueprint\Action\GetContents\Contents\Savable\Db;
 
 use Gbili\Miner\Blueprint\Action\GetContents\Contents\Savable as ContentsSavable;
-use Gbili\Db\Req\AbstractReq;
 use Gbili\Url\Url;
 
 class Req
-extends AbstractReq
+extends \Gbili\Db\Req\AbstractReq
 {
     
     protected $tableName = 'Content';

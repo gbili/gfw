@@ -68,6 +68,13 @@ abstract class AbstractCallback
 	 * @var unknown_type
 	 */
 	private $methodLoopIsFirstTime = array();
+
+	/**
+	 * 
+	 * @var unknown_type
+	 */
+	protected $stopPropagation = false;
+	
 	
 	/**
 	 * 
@@ -135,4 +142,26 @@ abstract class AbstractCallback
 			throw new Exception('the methodNotExistsThrow() first param must be the calling method name, the given does not exist in class : ' . print_r($methodName));
 		}
 	}
+
+    /**
+     * Tells the Callback Wrapper Aggregate to stop calling apply()
+     * on the rest of the callback wrapper aggregate queue
+     * Should be set by the callback calling setStopPropagation
+     * @return boolean
+     */
+    public function stopPropagation()
+    {
+        return $this->stopPropagation;
+    }
+
+    /**
+     * Tells the Callback Wrapper Aggregate to stop calling apply()
+     * on the rest of the callback wrapper aggregate queue
+     * @return AbstractCallback
+     */
+    protected function setStopPropagation($bool)
+    {
+        $this->stopPropagation = (boolean) $bool;
+        return $this;
+    }
 }

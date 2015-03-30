@@ -15,7 +15,7 @@ class Loader
     private function __construct(){}
     
     /**
-     * Get the crazay hashed composer autoloader
+     * Get the crazy hashed composer autoloader
      * 
      * @throws Exception
      * @return \Composer\Autoload\ClassLoader
@@ -26,12 +26,40 @@ class Loader
             return self::$loader;
         }
         
-        $pathToVendorsDir = realpath(__DIR__ . '/../../../../..');
-        $autoloadPath = $pathToVendorsDir . '/' . 'autoload.php';
-        if (!file_exists($autoloadPath)) {
-             throw new Exception("Cannot load the autoloader.php. File is unreachable, path: $autoloadPath");
+        $loader = null;
+        $autoloadPath = self::getLoaderPath();
+        if ($autoloadPath !== null) {
+            $loader = include $autoloadPath;
+        } else {
+            try {
+                $loader = new \Composer\Autoload\ClassLoader();
+            } catch (\Exception $e) {
+                throw new \Exception("Cannot load the autoloader.php. File is unreachable, path: $autoloadPath");
+            }
         }
-        
-        return self::$loader = include $autoloadPath;
+        return self::$loader = $loader;
+    }
+
+    static public function getVendorPathWhenVendor()
+    {
+        return realpath(__DIR__ . '/../../../../..');
+    }
+
+    static public function getVendorPathWhenMain()
+    {
+        return realpath(__DIR__ . '/../../../../vendor');
+    }
+
+    static public function getLoaderPath()
+    {
+        $autoloadPath = self::getVendorPathWhenVendor() . '/' . 'autoload.php';
+        if (file_exists($autoloadPath)) {
+            return $autoloadPath;
+        }
+        $autoloadPath = self::getVendorPathWhenMain() . '/' . 'autoload.php';
+        if (file_exists($autoloadPath)) {
+            return $autoloadPath;
+        }
+        return null;
     }
 }

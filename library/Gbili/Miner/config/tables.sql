@@ -70,13 +70,13 @@ LOCK TABLES `BAction_r_InjectedBAction` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BAction_CallbackMethod`
+-- Table structure for table `Callable`
 --
 
-DROP TABLE IF EXISTS `BAction_CallbackMethod`;
+DROP TABLE IF EXISTS `Callable`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BAction_CallbackMethod` (
+CREATE TABLE `Callable` (
   `bActionId` int(10) unsigned NOT NULL default '0',
   `methodName` varchar(255) NOT NULL default '',
   PRIMARY KEY  (`bActionId`)
@@ -84,12 +84,12 @@ CREATE TABLE `BAction_CallbackMethod` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BAction_CallbackMethod`
+-- Dumping data for table `BAction_Callable`
 --
 
-LOCK TABLES `BAction_CallbackMethod` WRITE;
-/*!40000 ALTER TABLE `BAction_CallbackMethod` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BAction_CallbackMethod` ENABLE KEYS */;
+LOCK TABLES `Callable` WRITE;
+/*!40000 ALTER TABLE `BAction_Callable` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BAction_Callable` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -165,13 +165,13 @@ LOCK TABLES `BAction_ErrorData` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BAction_RegexGroup_r_CallbackMethod_ParamNum`
+-- Table structure for table `BAction_RegexGroup_r_Callable_ParamNum`
 --
 
-DROP TABLE IF EXISTS `BAction_RegexGroup_r_CallbackMethod_ParamNum`;
+DROP TABLE IF EXISTS `BAction_RegexGroup_r_Callable_ParamNum`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BAction_RegexGroup_r_CallbackMethod_ParamNum` (
+CREATE TABLE `BAction_RegexGroup_r_Callable_ParamNum` (
   `bActionId` int(10) unsigned NOT NULL default '0',
   `paramNum` int(10) unsigned NOT NULL default '0',
   `regexGroup` int(10) unsigned NOT NULL default '0',
@@ -180,12 +180,12 @@ CREATE TABLE `BAction_RegexGroup_r_CallbackMethod_ParamNum` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BAction_RegexGroup_r_CallbackMethod_ParamNum`
+-- Dumping data for table `BAction_RegexGroup_r_Callable_ParamNum`
 --
 
-LOCK TABLES `BAction_RegexGroup_r_CallbackMethod_ParamNum` WRITE;
-/*!40000 ALTER TABLE `BAction_RegexGroup_r_CallbackMethod_ParamNum` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BAction_RegexGroup_r_CallbackMethod_ParamNum` ENABLE KEYS */;
+LOCK TABLES `BAction_RegexGroup_r_Callable_ParamNum` WRITE;
+/*!40000 ALTER TABLE `BAction_RegexGroup_r_Callable_ParamNum` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BAction_RegexGroup_r_Callable_ParamNum` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -214,13 +214,13 @@ LOCK TABLES `BAction_RegexGroup_r_Const` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BAction_RegexGroup_r_MethodMethod`
+-- Table structure for table `BAction_RegexGroup_r_Callable`
 --
 
-DROP TABLE IF EXISTS `BAction_RegexGroup_r_MethodMethod`;
+DROP TABLE IF EXISTS `BAction_RegexGroup_r_Callable`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BAction_RegexGroup_r_MethodMethod` (
+CREATE TABLE `BAction_RegexGroup_r_Callable` (
   `bAMMId` int(10) unsigned NOT NULL auto_increment,
   `bActionId` int(10) unsigned NOT NULL default '0',
   `methodId` int(10) unsigned NOT NULL default '0',
@@ -231,12 +231,12 @@ CREATE TABLE `BAction_RegexGroup_r_MethodMethod` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BAction_RegexGroup_r_MethodMethod`
+-- Dumping data for table `BAction_RegexGroup_r_Callable`
 --
 
-LOCK TABLES `BAction_RegexGroup_r_MethodMethod` WRITE;
-/*!40000 ALTER TABLE `BAction_RegexGroup_r_MethodMethod` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BAction_RegexGroup_r_MethodMethod` ENABLE KEYS */;
+LOCK TABLES `BAction_RegexGroup_r_Callable` WRITE;
+/*!40000 ALTER TABLE `BAction_RegexGroup_r_Callable` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BAction_RegexGroup_r_Callable` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -289,13 +289,13 @@ LOCK TABLES `Blueprint_CMPaths` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `Blueprint_MethodMethod`
+-- Table structure for table `Blueprint_Callable`
 --
 
-DROP TABLE IF EXISTS `Blueprint_MethodMethod`;
+DROP TABLE IF EXISTS `Blueprint_Callable`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `Blueprint_MethodMethod` (
+CREATE TABLE `Blueprint_Callable` (
   `methodId` int(10) unsigned NOT NULL auto_increment,
   `bId` int(10) unsigned NOT NULL default '0',
   `name` varchar(255) NOT NULL default '',
@@ -304,12 +304,12 @@ CREATE TABLE `Blueprint_MethodMethod` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `Blueprint_MethodMethod`
+-- Dumping data for table `Blueprint_Callable`
 --
 
-LOCK TABLES `Blueprint_MethodMethod` WRITE;
-/*!40000 ALTER TABLE `Blueprint_MethodMethod` DISABLE KEYS */;
-/*!40000 ALTER TABLE `Blueprint_MethodMethod` ENABLE KEYS */;
+LOCK TABLES `Blueprint_Callable` WRITE;
+/*!40000 ALTER TABLE `Blueprint_Callable` DISABLE KEYS */;
+/*!40000 ALTER TABLE `Blueprint_Callable` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
