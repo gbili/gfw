@@ -11,7 +11,7 @@ use Gbili\Autoloader\Loader;
  * encapsulating the whole thing together.
  * I.E. : 
  * So it accepts the input string in the constructor
- * then generates the appropriate Regex and Regex_String subclasses and automatically ties to validate input
+ * then generates the appropriate Regex and Regex_String subclasses and automatically tries to validate input
  * you can specify to throw exception if the input is not considered to be valid by the regex.
  * 
  * Once validation has taken place, and the regex matched something, the abstract function setParts() is 
@@ -259,8 +259,9 @@ abstract class AbstractEncapsulator
 	 */
 	public function getClassname($forClassPart)
 	{
-	    $baseClassname = get_class($this);
-        if (!Loader::getLoader()->findFile($baseClassname . '\\' . $forClassPart)) {
+	    $baseClassname = '\\' . get_class($this);
+        if (!class_exists($baseClassname . '\\' . $forClassPart)) {
+        //if (!Loader::getLoader()->findFile($baseClassname . '\\' . $forClassPart)) {
             $baseClassname = substr($baseClassname, 0, strrpos($baseClassname, '\\'));
         }
         return  $baseClassname . '\\' . $forClassPart;

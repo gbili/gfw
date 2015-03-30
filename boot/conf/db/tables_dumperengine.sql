@@ -1,6 +1,6 @@
 -- MySQL dump 10.11
 --
--- Host: localhost    Database: minerengine
+-- Host: localhost    Database: miner
 -- ------------------------------------------------------
 -- Server version	5.0.88
 
@@ -16,276 +16,252 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `BPAction`
+-- Table structure for table `BAction`
 --
 
-DROP TABLE IF EXISTS `BPAction`;
+DROP TABLE IF EXISTS `BAction`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BPAction` (
-  `bPActionId` int(10) unsigned NOT NULL auto_increment,
-  `bPParentActionId` int(10) unsigned NOT NULL default '0',
-  `bPId` int(10) unsigned NOT NULL default '0',
+CREATE TABLE `BAction` (
+  `bActionId` int(10) unsigned NOT NULL auto_increment,
+  `bParentActionId` int(10) unsigned NOT NULL default '0',
+  `bId` int(10) unsigned NOT NULL default '0',
   `execRank` int(10) unsigned NOT NULL default '0',
-  `inputParentRegexGroupNumber` int(10) unsigned NOT NULL default '0',
+  `inputParentRegexGroup` varchar(255) NOT NULL default '',
   `type` int(10) unsigned NOT NULL default '0',
   `useMatchAll` int(10) unsigned NOT NULL default '0',
   `isOpt` int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (`bPActionId`)
-) ENGINE=MyISAM AUTO_INCREMENT=13 DEFAULT CHARSET=utf8;
+  `title` varchar(255) NOT NULL default '',
+  PRIMARY KEY  (`bActionId`)
+) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BPAction`
+-- Dumping data for table `BAction`
 --
 
-LOCK TABLES `BPAction` WRITE;
-/*!40000 ALTER TABLE `BPAction` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BPAction` ENABLE KEYS */;
+LOCK TABLES `BAction` WRITE;
+/*!40000 ALTER TABLE `BAction` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BAction` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BPAction_r_InjectedBPAction`
+-- Table structure for table `BAction_r_InjectedBAction`
 --
 
-DROP TABLE IF EXISTS `BPAction_r_InjectedBPAction`;
+DROP TABLE IF EXISTS `BAction_r_InjectedBAction`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BPAction_r_InjectedBPAction` (
-  `bPActionId` int(10) unsigned NOT NULL default '0',
+CREATE TABLE `BAction_r_InjectedBAction` (
+  `bActionId` int(10) unsigned NOT NULL default '0',
   `injectedActionId` int(10) unsigned NOT NULL default '0',
   `inputGroup` int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (`bPActionId`, `injectedActionId`)
+  PRIMARY KEY  (`bActionId`, `injectedActionId`)
 ) ENGINE=MyISAM AUTO_INCREMENT=13 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BPAction_r_InjectedBPAction`
+-- Dumping data for table `BAction_r_InjectedBAction`
 --
 
-LOCK TABLES `BPAction_r_InjectedBPAction` WRITE;
-/*!40000 ALTER TABLE `BPAction_r_InjectedBPAction` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BPAction_r_InjectedBPAction` ENABLE KEYS */;
+LOCK TABLES `BAction_r_InjectedBAction` WRITE;
+/*!40000 ALTER TABLE `BAction_r_InjectedBAction` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BAction_r_InjectedBAction` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BPAction_CallbackMethod`
+-- Table structure for table `Callable`
 --
 
-DROP TABLE IF EXISTS `BPAction_CallbackMethod`;
+DROP TABLE IF EXISTS `Callable`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BPAction_CallbackMethod` (
-  `bPActionId` int(10) unsigned NOT NULL default '0',
+CREATE TABLE `Callable` (
+  `callableId` int(10) unsigned NOT NULL auto_increment,
+  `serviceIdentifier` varchar(255) NOT NULL default '',
   `methodName` varchar(255) NOT NULL default '',
-  PRIMARY KEY  (`bPActionId`)
+  PRIMARY KEY  (`callableId`)
 ) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BPAction_CallbackMethod`
+-- Dumping data for table `Callable`
 --
 
-LOCK TABLES `BPAction_CallbackMethod` WRITE;
-/*!40000 ALTER TABLE `BPAction_CallbackMethod` DISABLE KEYS */;
-INSERT INTO `BPAction_CallbackMethod` VALUES (2,'rootLoop'),(5,'rootLoop');
-/*!40000 ALTER TABLE `BPAction_CallbackMethod` ENABLE KEYS */;
+LOCK TABLES `Callable` WRITE;
+/*!40000 ALTER TABLE `Callable` DISABLE KEYS */;
+/*!40000 ALTER TABLE `Callable` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BPAction_Data`
+-- Table structure for table `BAction_r_Callable`
 --
 
-DROP TABLE IF EXISTS `BPAction_Data`;
+DROP TABLE IF EXISTS `BAction_r_Callable`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BPAction_Data` (
-  `bPActionId` int(10) unsigned NOT NULL default '0',
+CREATE TABLE `BAction_r_Callable` (
+  `bActionId` int(10) unsigned NOT NULL default '0',
+  `callableId` int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY  (`bActionId`, `callableId`)
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `BAction_r_Callable`
+--
+
+LOCK TABLES `BAction_r_Callable` WRITE;
+/*!40000 ALTER TABLE `BAction_r_Callable` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BAction_r_Callable` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `BAction_Data`
+--
+
+DROP TABLE IF EXISTS `BAction_Data`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `BAction_Data` (
+  `bActionId` int(10) unsigned NOT NULL default '0',
   `data` text NOT NULL,
-  PRIMARY KEY  (`bPActionId`)
+  PRIMARY KEY  (`bActionId`)
 ) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BPAction_Data`
+-- Dumping data for table `BAction_Data`
 --
 
-LOCK TABLES `BPAction_Data` WRITE;
-/*!40000 ALTER TABLE `BPAction_Data` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BPAction_Data` ENABLE KEYS */;
+LOCK TABLES `BAction_Data` WRITE;
+/*!40000 ALTER TABLE `BAction_Data` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BAction_Data` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BPAction_ErrorData`
+-- Table structure for table `BAction_ErrorData`
 --
 
-DROP TABLE IF EXISTS `BPAction_ErrorData`;
+DROP TABLE IF EXISTS `BAction_ErrorData`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BPAction_ErrorData` (
-  `bPNIGPActionId` int(10) unsigned NOT NULL default '0',
+CREATE TABLE `BAction_ErrorData` (
+  `bNIGPActionId` int(10) unsigned NOT NULL default '0',
   `nIGPLastInputData` text NOT NULL,
   `errorTriggerActionId` int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (`bPNIGPActionId`)
+  PRIMARY KEY  (`bNIGPActionId`)
 ) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BPAction_ErrorData`
+-- Dumping data for table `BAction_ErrorData`
 --
 
-LOCK TABLES `BPAction_ErrorData` WRITE;
-/*!40000 ALTER TABLE `BPAction_ErrorData` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BPAction_ErrorData` ENABLE KEYS */;
+LOCK TABLES `BAction_ErrorData` WRITE;
+/*!40000 ALTER TABLE `BAction_ErrorData` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BAction_ErrorData` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BPAction_RegexGroup_r_CallbackMethod_ParamNum`
+-- Table structure for table `BAction_RegexGroup_r_Callable_ParamNum`
 --
 
-DROP TABLE IF EXISTS `BPAction_RegexGroup_r_CallbackMethod_ParamNum`;
+DROP TABLE IF EXISTS `BAction_RegexGroup_r_Callable_ParamNum`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BPAction_RegexGroup_r_CallbackMethod_ParamNum` (
-  `bPActionId` int(10) unsigned NOT NULL default '0',
+CREATE TABLE `BAction_RegexGroup_r_Callable_ParamNum` (
+  `bActionId` int(10) unsigned NOT NULL default '0',
   `paramNum` int(10) unsigned NOT NULL default '0',
   `regexGroup` int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (`bPActionId`,`paramNum`)
+  PRIMARY KEY  (`bActionId`,`paramNum`)
 ) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BPAction_RegexGroup_r_CallbackMethod_ParamNum`
+-- Dumping data for table `BAction_RegexGroup_r_Callable_ParamNum`
 --
 
-LOCK TABLES `BPAction_RegexGroup_r_CallbackMethod_ParamNum` WRITE;
-/*!40000 ALTER TABLE `BPAction_RegexGroup_r_CallbackMethod_ParamNum` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BPAction_RegexGroup_r_CallbackMethod_ParamNum` ENABLE KEYS */;
+LOCK TABLES `BAction_RegexGroup_r_Callable_ParamNum` WRITE;
+/*!40000 ALTER TABLE `BAction_RegexGroup_r_Callable_ParamNum` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BAction_RegexGroup_r_Callable_ParamNum` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BPAction_RegexGroup_r_Const`
+-- Table structure for table `BAction_RegexGroup_r_Const`
 --
 
-DROP TABLE IF EXISTS `BPAction_RegexGroup_r_Const`;
+DROP TABLE IF EXISTS `BAction_RegexGroup_r_Const`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BPAction_RegexGroup_r_Const` (
-  `bPActionId` int(10) unsigned NOT NULL default '0',
-  `regexGroup` int(10) unsigned NOT NULL default '0',
-  `const` int(10) unsigned NOT NULL default '0',
+CREATE TABLE `BAction_RegexGroup_r_Const` (
+  `bActionId` int(10) unsigned NOT NULL default '0',
+  `regexGroup` varchar(255) NOT NULL default '',
+  `const` varchar(255) NOT NULL default '',
   `isOpt` int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (`bPActionId`,`regexGroup`)
+  PRIMARY KEY  (`bActionId`,`regexGroup`)
 ) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BPAction_RegexGroup_r_Const`
+-- Dumping data for table `BAction_RegexGroup_r_Const`
 --
 
-LOCK TABLES `BPAction_RegexGroup_r_Const` WRITE;
-/*!40000 ALTER TABLE `BPAction_RegexGroup_r_Const` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BPAction_RegexGroup_r_Const` ENABLE KEYS */;
+LOCK TABLES `BAction_RegexGroup_r_Const` WRITE;
+/*!40000 ALTER TABLE `BAction_RegexGroup_r_Const` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BAction_RegexGroup_r_Const` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BPAction_RegexGroup_r_MethodMethod`
+-- Table structure for table `BAction_RegexGroup_r_Callable`
 --
 
-DROP TABLE IF EXISTS `BPAction_RegexGroup_r_MethodMethod`;
+DROP TABLE IF EXISTS `BAction_RegexGroup_r_Callable`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BPAction_RegexGroup_r_MethodMethod` (
-  `bPAMMId` int(10) unsigned NOT NULL auto_increment,
-  `bPActionId` int(10) unsigned NOT NULL default '0',
-  `methodId` int(10) unsigned NOT NULL default '0',
+CREATE TABLE `BAction_RegexGroup_r_Callable` (
+  `bAMMId` int(10) unsigned NOT NULL auto_increment,
+  `bActionId` int(10) unsigned NOT NULL default '0',
+  `callableId` int(10) unsigned NOT NULL default '0',
   `regexGroup` int(10) unsigned NOT NULL default '0',
   `interceptType` int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (`bPAMMId`)
+  PRIMARY KEY  (`bAMMId`)
 ) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BPAction_RegexGroup_r_MethodMethod`
+-- Dumping data for table `BAction_RegexGroup_r_Callable`
 --
 
-LOCK TABLES `BPAction_RegexGroup_r_MethodMethod` WRITE;
-/*!40000 ALTER TABLE `BPAction_RegexGroup_r_MethodMethod` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BPAction_RegexGroup_r_MethodMethod` ENABLE KEYS */;
+LOCK TABLES `BAction_RegexGroup_r_Callable` WRITE;
+/*!40000 ALTER TABLE `BAction_RegexGroup_r_Callable` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BAction_RegexGroup_r_Callable` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BluePrint`
+-- Table structure for table `Blueprint`
 --
 
-DROP TABLE IF EXISTS `BluePrint`;
+DROP TABLE IF EXISTS `Blueprint`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BluePrint` (
-  `bPId` int(10) unsigned NOT NULL auto_increment,
+CREATE TABLE `Blueprint` (
+  `bId` int(10) unsigned NOT NULL auto_increment,
   `host` varchar(255) NOT NULL default '',
   `newInstanceGeneratingPointActionId` int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (`bPId`)
+  PRIMARY KEY  (`bId`)
 ) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BluePrint`
+-- Dumping data for table `Blueprint`
 --
 
-LOCK TABLES `BluePrint` WRITE;
-/*!40000 ALTER TABLE `BluePrint` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BluePrint` ENABLE KEYS */;
+LOCK TABLES `Blueprint` WRITE;
+/*!40000 ALTER TABLE `Blueprint` DISABLE KEYS */;
+/*!40000 ALTER TABLE `Blueprint` ENABLE KEYS */;
 UNLOCK TABLES;
 
---
--- Table structure for table `BluePrint_CMPaths`
---
-
-DROP TABLE IF EXISTS `BluePrint_CMPaths`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BluePrint_CMPaths` (
-  `bPId` int(10) unsigned NOT NULL default '0',
-  `path` varchar(255) NOT NULL default '',
-  `pathType` int(10) unsigned NOT NULL default '0',
-  `classType` int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (`bPId`,`pathType`,`classType`)
-) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `BluePrint_CMPaths`
---
-
-LOCK TABLES `BluePrint_CMPaths` WRITE;
-/*!40000 ALTER TABLE `BluePrint_CMPaths` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BluePrint_CMPaths` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `BluePrint_MethodMethod`
---
-
-DROP TABLE IF EXISTS `BluePrint_MethodMethod`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BluePrint_MethodMethod` (
-  `methodId` int(10) unsigned NOT NULL auto_increment,
-  `bPId` int(10) unsigned NOT NULL default '0',
-  `name` varchar(255) NOT NULL default '',
-  PRIMARY KEY  (`methodId`)
-) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `BluePrint_MethodMethod`
---
-
-LOCK TABLES `BluePrint_MethodMethod` WRITE;
-/*!40000 ALTER TABLE `BluePrint_MethodMethod` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BluePrint_MethodMethod` ENABLE KEYS */;
-UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

@@ -1,22 +1,6 @@
 <?php
 namespace Gbili\Miner;
 
-use Gbili\Miner\Blueprint\Action\RootAction;
-use Gbili\Miner\Blueprint\Action\GetContents\RootGetContents;
-use Zend\ServiceManager\ServiceManager;
-
-
-use Gbili\Out\Out,
-    Gbili\Url\Authority\Host,
-    Gbili\Db\Registry                                                as DbRegistry,
-    Gbili\Miner\Blueprint\Db\DbInterface,
-    Gbili\Miner\Blueprint\Action\ClassMethodLoader,
-    Gbili\Miner\Blueprint\Action\AbstractAction,
-    Gbili\Miner\Blueprint\Action\GetContents,
-    Gbili\Miner\Blueprint\Action\Extract,
-    Gbili\Miner\Blueprint\Action\Extract\Method\Wrapper       as ExtractMethodWrapper,
-    Gbili\Miner\Blueprint\Action\GetContents\Callback\Wrapper as GetContentsCallbackWrapper;
-
 /**
  * The Blueprint takes a host as constructor parameter and with that it will
  * try to reconstruct a previously saved (with \\Gbili\\Miner\\Blueprint_Savable)
@@ -60,15 +44,7 @@ class Blueprint
 	 * 
 	 * @var \Zend\ServiceManager\ServiceManager
 	 */
-	protected $serviceManager = null;
-	
-	/**
-	 * Contains one action \\Gbili\\Miner\\Blueprint_Action_Abstractfrom
-	 * which all other actions are accessible
-	 * 
-	 * @var \Gbili\Miner\Blueprint\Action\AbstractAction
-	 */
-	private $lastAction;
+	protected $serviceManager;
 	
 	/**
 	 * this is a flat representation of the
@@ -89,109 +65,84 @@ class Blueprint
 	 * 
 	 * @var unknown_type
 	 */
-	private $newInstanceGeneratingPointActionId = null;
+	private $newInstanceGeneratingPointActionId;
 	
 	/**
-	 * Every time an action has been successfully added
-	 * to the action chain, then this variable takes
-	 * the value of its parent it
-	 * So it can be remebered for next action, and help
-	 * determining, if the next action is brother (has same parent)
-	 * or is child
-	 * 
-	 * @var unknown_type
-	 */
-	private $lastParentId = null;
-	
-	/**
-	 * 
-	 * @var \Gbili\Miner\Blueprint\Action\AbstractAction
-	 */
-	private $currentAction = null;
-	
-	/**
-	 * 
-	 * @var unknown_type
-	 */
-	private $methodClassInstance = null;
-	
-	/**
-	 * 
-	 * @var unknown_type
-	 */
-	private $callbackClassInstance = null;
-	
-	/**
-	 * 
 	 * @var Host
 	 */
 	private $host;
-	
-	/**
-	 * ActionIds of actions injecting
-	 * other actions
-	 * 
-	 * @var unknown_type
-	 */
-    protected $injectingActionIds = array();
+
+    /**
+     * @var Db\DbInterface
+     */
+    protected $dbReq;
 	
 	/**
 	 * Will generate the actions chain from the action set
 	 * from Db passed as argument
 	 * This is called from \\Gbili\\Miner\\Blueprint::factory()
 	 * 
-	 * @param Host $host
+	 * @param \Gbili\Url\Authority\Host $host
 	 * @return unknown_type
 	 */
-	public function __construct(Host $host, ServiceManager $sm)
+	public function __construct(\Gbili\Url\Authority\Host $host, \Zend\ServiceManager\ServiceManager $sm, Blueprint\Db\DbInterface $dbReq)
 	{
-	    $this->serviceManager = $sm;
 		$this->host = $host;
-		//get the blueprint info from db and set it in instance
-		$this->setInfo();
-		/*
-		 * after calling setInfo() $callbackClassInstance and 
-		 * $methodClassInstance must be set if available
-		 * and there is new instance generating point action id
-		 * fetch the Db to get the action set
-		 */
-		$recordset = DbRegistry::getInstance('\Gbili\Miner\Blueprint')->getActionSet($this->host);
-		//ensure there are rows
-		if (false === $recordset) {
+	    $this->setServiceManager($sm);
+        $this->setDbReq($dbReq);
+	}
+
+    /**
+     * Create the action stack
+     *
+     * @return self
+     */
+    public function init()
+    {
+		$this->setNewInstanceGeneratingPoint();
+		$this->addActionSet();
+		$this->manageInjections();
+    }
+
+    public function setDbReq(Blueprint\Db\DbInterface $dbReq)
+    {
+        $this->dbReq = $dbReq;
+        return $this;
+    }
+
+    public function getDbReq()
+    {
+        if (null === $this->dbReq) {
+            throw new Exception('Requestor not set');
+        }
+        return $this->dbReq;
+    }
+
+    protected function addActionSet()
+    {
+        $recordset = $this->getDbReq()->getActionSet($this->host);
+		if (!$recordset) {
 			throw new Exception('There is no action set for this url : '. $this->host->toString());
 		}
-		
-		//create an action per recordset row
 		foreach ($recordset as $row) {
-            $this->createActionFromRow($row);
+            $row['isNewInstanceGeneratingPoint'] = ((integer)$row['actionId'] === (integer)$this->newInstanceGeneratingPointActionId);
+            $action = $this->createActionFromRow($row);
+            $this->addAction($action);
 		}
-		
-		//ensure there is a new instance generating point action is present
-		if (null === $this->newInstanceGeneratingPointActionId) {
-			throw new Exception( 'There is no new instance generating point');
-		}
-		
-		//now pass the root pointer to the blueprint
-		$this->lastAction = $this->currentAction->getRoot();
-		
-		$this->manageInjections();
-	}
+    }
 	
 	/**
-	 * 
+     * Actions can take input from other than parent
+     * Here is where those injections are setup
 	 */
 	protected function manageInjections()
 	{
-	    foreach ($this->actionStack as $id => $action) {
-    		$injectData = DbRegistry::getInstance('\Gbili\Miner\Blueprint')->getInjectionData($id);
-
-    		if (empty($injectData) || is_array($injectData)) continue;
-
+	    foreach ($this->getActions() as $action) {
+    		if (!$injectData = $this->getDbReq()->getInjectionData($action->getId())) continue;
             $injectData               = current($injectData);
-            $injectingAction          = $this->actionStack[$injectData['injectingActionId']];
+            $injectingAction          = $this->getAction($injectData['injectingActionId']);
             $getInputFromactionGroup  = $injectData['inputGroup'];
-            $action->setOtherInputActionInfo($injectingAction, $getInputFromactionGroup);
-            $injectingAction->setInjectsParent();
+            $action->setInputActionInfo($injectingAction, $getInputFromactionGroup);
 	    }
 	}
 	
@@ -202,40 +153,59 @@ class Blueprint
 	{
 	    return $this->serviceManager;
 	}
+
+	/**
+	 * 
+	 */
+	public function setServiceManager(\Zend\ServiceManager\ServiceManager $sm)
+    {
+        $this->serviceManager = $sm;
+	    return $this;
+	}
 	
+    protected function getActionClass(array $row)
+    {
+        $baseClassName = '\\Gbili\\Miner\\Blueprint\\Action\\';
+        $type = (integer) $row['type'];
+        if ($type === self::ACTION_TYPE_EXTRACT) {
+            $class = 'Extract';
+        }
+        if ($type === self::ACTION_TYPE_GETCONTENTS) {
+            $class = 'GetContents' . (($this->isActionRoot($row))? '\\RootGetContents': '');
+        }
+        if (!isset($class)) {
+            throw new Exception('Unsupported action type given : ' . print_r($row, true));
+        }
+        return $baseClassName . $class;
+    }
+
 	/**
 	 * 
 	 * @param array $row
 	 * @throws Exception
 	 */
 	protected function createActionFromRow(array $row)
-	{	    
-	    switch ((integer) $row['type']) {
-	        case self::ACTION_TYPE_EXTRACT:
-	            $this->initActionExtract($row);
-	            break;
-	        case self::ACTION_TYPE_GETCONTENTS:
-	            $this->initActionGetContents($row);
-	            break;
-	        default:
-	            throw new Exception('Unsupported action type given : ' . print_r($row, true));
-	            break;
-	    }
-	    
-	    $this->currentAction->setTitle($row['title']);
-	    $this->currentAction->setId($row['actionId']);
-	    
-	    if ($this->currentAction->getId() === $this->newInstanceGeneratingPointActionId) {
-	        $this->currentAction->setAsNewInstanceGeneratingPoint();
-	    }
-	    
-	    $this->actionStack[(integer) $row['actionId']] = $this->currentAction;
-	    
-	    $this->chainToParentAndSetInputGroupIfExtract((integer) $row['parentId'], $row['inputGroup']);
-	    
-	    $this->currentAction->setBlueprint($this);
-	    return $this->currentAction;
+	{
+        $actionClass = $this->getActionClass($row);
+        $action = new $actionClass();
+	    $action->setBlueprint($this);
+        $action->hydrate($row);
+        return $action;
 	}
+
+    /**
+     * Add action to action stack indexed by their ids
+     * and point the current action to the latest added action
+     */
+    protected function addAction(Blueprint\Action\AbstractAction $action)
+    {
+	    $this->actionStack[$action->getId()] = $action;
+    }
+
+    public function hasAction($id)
+    {
+        return isset($this->actionStack[(integer)$id]);
+    }
 	
 	/**
 	 * Set the method and callback instances
@@ -243,104 +213,24 @@ class Blueprint
 	 * 
 	 * @return unknown_type
 	 */
-	private function setInfo()
+	private function setNewInstanceGeneratingPoint()
 	{
-		$dbRegObj = DbRegistry::getInstance('\\Gbili\\Miner\\Blueprint');
-		if (!($dbRegObj instanceof DbInterface)) {
-			throw new Exception('The DbRegistry must return an instanceof \\Gbili\\Miner\\Blueprint\\Db\\DbInterface');
-		}
-		$bRecordset = $dbRegObj->getBlueprintInfo($this->host);
-		if (false === $bRecordset) {
+		$recordset = $this->getDbReq()->getBlueprintInfo($this->host);
+		if (false === $recordset) {
 			throw new Exception('The blueprint does not exist');
 		}
-		
-		foreach ($bRecordset as $record) {
-			//Out::l1($record);
-			if (!isset($record['path'])) { //if path is present all other should be too
-				break;
-			}
-			$this->loadCMClass($record['path'], (integer) $record['pathType'], (integer) $record['classType']);
+        $record = current($recordset);
+        $id = (integer) $record['newInstanceGeneratingPointActionId'];
+		if (0 === $id) {
+            throw new Exception('New instance generating point should not be 0');
 		}
-
-        if (empty($bRecordset)) {
-			throw new Exception('There are no records in db');
-        }
-
-		//set the new instance generating point action id
-		if (0 !== (integer) $record['newInstanceGeneratingPointActionId']) {
-		    $this->newInstanceGeneratingPointActionId = (integer) $record['newInstanceGeneratingPointActionId'];
-		}
-		
+        $this->newInstanceGeneratingPointActionId = $id;
 	}
-	
-	/**
-	 * Instantiate callback and method classes using CM loader
-	 * 
-	 * @param unknown_type $path
-	 * @param unknown_type $pathType
-	 * @param unknown_type $classType
-	 * @return unknown_type
-	 */
-	private function loadCMClass($path, $pathType, $classType)
-	{	
-	    //hack for base path to try to load both class types
-		$classTypes = array(
-		    ClassMethodLoader::CLASS_TYPE_CALLBACK,
-		    ClassMethodLoader::CLASS_TYPE_METHOD
-		);
-		
-		if (ClassMethodLoader::PATH_TYPE_BASE !== $pathType) {
-		    $classTypes = array($classType);
-		}
 
-		foreach ($classTypes as $classType) {
-            $this->loadCMClassType($path, $pathType, $classType);
-		}
-	}
-	
-	/**
-	 * 
-	 * @param unknown_type $path
-	 * @param unknown_type $pathType
-	 * @param unknown_type $classType
-	 * @throws Exception
-	 */
-	private function loadCMClassType($path, $pathType, $classType)
-	{
-	    $className = ClassMethodLoader::loadCMClass($path, $this->host, $pathType, $classType);
-	    if (!is_string($className)) {
-	        throw new Exception("class not loaded : " . print_r(ClassMethodLoader::getErrors(), true));
-	    }
-	    if (ClassMethodLoader::CLASS_TYPE_CALLBACK === $classType) {
-	        $this->callbackClassInstance = new $className();
-	    } else {
-	        $this->methodClassInstance = new $className();
-	    }
-	}
-	
-	/**
-	 * This function creates an action instance that it makes
-	 * available to the constructor by setting $this->currentAction
-	 * 
-	 * @param array $info
-	 * @return unknown_type
-	 */
-	private function initActionGetContents(array $info)
-	{
-		//Out::l2("initializing action getContents\n");
-		//if it is root action
-		if ($info['actionId'] === $info['parentId']) {
-		    $action = new RootGetContents();
-		    $action->setBootstrapData($info['data']);
-		} else {
-		    $action = new GetContents();
-		}
-		
-		$this->currentAction = $action;
-		$this->currentAction->setAsOptional($info['isOpt']);
-
-        $this->initCallbackWrapperForActionInInfo($info);
-	}
+    protected function isActionRoot(array $info)
+    {
+        return $info['actionId'] === $info['parentId'];
+    }
 
     /**
      * Init callback wrapper if the action provides info
@@ -348,60 +238,50 @@ class Blueprint
      * @param array $info blueprint info for action
      * @return self
      */
-    protected function initCallbackWrapperForActionInInfo(array $info)
+    public function initCallbackWrapperForAction(Blueprint\Action\GetContents $action)
     {
-		$callbackInfo = DbRegistry::getInstance($this)->getActionCallbackMethodName($info['actionId']);
-		if (empty($callbackInfo) || false === $callbackInfo) {
-            return $this;
+		if ($resultset = $this->getDbReq()->getActionCallable($action->getId())) {
+            $callbackInfo = current($resultset);
+            $this->setActionCallbackWrapper($action, $callbackInfo);
 		}
-
-		if (null === $this->callbackClassInstance) {
-		    throw new Exception('the current action extract wants to use method hook, but the blueprint did not manage to instantiate the method class');
-		}
-		$row = current($callbackInfo);
-		//Out::l1($row['methodName']);
-		//if the callbacInstance is null it will throw an exception because of param type hint
-		$cW = new GetContentsCallbackWrapper($this->callbackClassInstance, $row['methodName']);
- 
-		//not all callbacks have a mapping (ex: a root get contents that uses itself as input)
-		$callbackMapping = DbRegistry::getInstance($this)->getActionCallbackParamsToGroupMapping($info['actionId']);
-		//Out::l2("retrieving action callback params to group mapping : \n" . print_r($callbackMapping, true));
-		$callbackParamGroupMapping = array();//set blank mapping
-		if (false !== $callbackMapping) {
-		    //reshape array
-		    foreach ($callbackMapping as $row) {
-		        $callbackParamGroupMapping[$row['paramNum']] = $row['regexGroup'];
-		    }
-		} else {
-		    //default group mapping
-		    $callbackParamGroupMapping = array(1);
-		}
-		$cW->setParamToGroupMapping($callbackParamGroupMapping);
-		$this->currentAction->setCallbackWrapper($cW);
-
         return $this;
     } 
+
+    /**
+     *
+     */
+    protected function setActionCallbackWrapper(Blueprint\Action\GetContents $action, $callbackInfo)
+    {
+        $service = $this->getServiceManager()->get($callbackInfo['serviceIdentifier']);
+
+        $callbackWrapper = new Blueprint\Action\GetContents\Callback\Wrapper($service, $callbackInfo['methodName']);
+ 
+        //not all callbacks have a mapping (ex: a root get contents that uses itself as input)
+        $callbackParamGroupMapping = array();
+        if ($callbackMapping = $this->getDbReq()->getActionCallableParamsToGroupMapping($action->getId())) {
+            foreach ($callbackMapping as $callbackInfo) {
+                $callbackParamGroupMapping[$callbackInfo['paramNum']] = $callbackInfo['regexGroup'];
+            }
+        }
+        if (empty($callbackParamGroupMapping)) {
+            $callbackParamGroupMapping = array(1);
+        }
+        $callbackWrapper->setParamToGroupMapping($callbackParamGroupMapping);
+        $action->setCallbackWrapper($callbackWrapper);
+    }
 	
 	/**
 	 * 
 	 * @param array $info
 	 * @return void
 	 */
-	private function initActionExtract(array $info)
+	public function initActionExtract($action)
 	{
-		//Out::l2("initializing action extract\n");
-		$this->currentAction = new Extract($info['data'], (1 === (integer) $info['useMatchAll']));
-		//Out::l2("initActionExtract Id : {$info['actionId']}, regexData : " . print_r($info['data'], true));
-		//query Db to get the group mapping (final results mapping)
-		$groupMapping = DbRegistry::getInstance($this)->getActionGroupToEntityMapping($info['actionId']);
-		//ensure there are rows
-		if (false !== $groupMapping) {
-			//set the group mapping even if empty
-			$this->currentAction->setGroupMapping($groupMapping);
+		if ($groupMapping = $this->getDbReq()->getActionGroupToEntityMapping($action->getId())) {
+			$action->setGroupMapping($groupMapping);
 		}
-		$this->currentAction->setAsOptional($info['isOpt']);
-
-        $this->initExtractMethodForActionInInfo($info);
+        $this->initExtractMethodWrapper($action);
+        return $action;
 	}
 
     /**
@@ -410,131 +290,57 @@ class Blueprint
      * @param array $info blueprint info for action
      * @return self
      */
-    protected function initExtractMethodForActionInInfo(array $info)
+    protected function initExtractMethodWrapper(Blueprint\Action\Extract $action)
     {
-		$interceptMap = DbRegistry::getInstance($this)->getActionGroupToMethodNameAndInterceptType($info['actionId']);
-		
-		if (empty($interceptMap) || false === $interceptMap) {
-		    return $this;
+		if ($interceptMap = $this->getDbReq()->getActionGroupToCallableAndInterceptType($action->getId())) {
+            $methodWrapper = new Blueprint\Action\Extract\Method\Wrapper($this->getServiceManager(), $interceptMap);
+            $action->setMethodWrapper($methodWrapper);
 		}
-		
-		//Out::l2("uses intercept\n" . print_r($interceptMap, true));
-		if (null === $this->methodClassInstance) {
-		    throw new Exception('the current action extract wants to use method hook, but the blueprint did not manage to instantiate the method class');
-		}
-		$mW = new ExtractMethodWrapper($this->methodClassInstance, $interceptMap);
-		//Out::l1($this->methodClassInstance);
-		$this->currentAction->setMethodWrapper($mW);
-        return $this;
     }
-	
-	/**
-	 * 
-	 * @return unknown_type
-	 */
-	public function getCallbackInstance()
-	{
-		if (null === $this->callbackClassInstance) {
-			throw new Exception('There is no callback instance set in this blue print');
-		}
-		return $this->callbackClassInstance;
-	}
-	
-	/**
-	 * 
-	 * @return unknown_type
-	 */
-	public function getMethodInstance()
-	{
-		if (null === $this->methodClassInstance) {
-			throw new Exception('There is no callback instance set in this blue print');
-		}
-		return $this->methodClassInstance;
-	}
-	
-	/**
-	 * Chains the action to the right parent
-	 * and sets from which parent group the 
-	 * action must take its input data (if it
-	 * is an instance of extract)
-	 * 
-	 * @param $action
-	 * @param $currentParentId
-	 * @param $inputDataGroup
-	 * @return unknown_type
-	 */
-	private function chainToParentAndSetInputGroupIfExtract($currentParentId, $inputDataGroup)
-	{
-		//find the right parent and add child
-		if (!$this->currentAction instanceof RootAction) {
-		    $this->findParent($currentParentId)->addChild($this->currentAction);
-		}
-
-		//Point the chain to the last action
-		$this->lastAction = $this->currentAction;
-		//also set the group for input
-		if ($this->lastAction->getParent() instanceof Extract) {
-			$this->lastAction->setInputDataGroup($inputDataGroup);
-		}
-	}
-	
-	/**
-	 * 
-	 * @param unknown_type $parentId
-	 * @return \Gbili\Miner\Blueprint\Action\AbstractAction
-	 */
-	private function findParent($parentId)
-	{
-		//get the youngest action
-		$action = $this->lastAction;
-		while ($action->getId() !== $parentId) {
-			if ($action instanceof RootAction) {
-				throw new Exception("Did not find parent in stack while rolling back");
-			}
-			$action = $action->getParent();
-		}
-		return $action;
-	}
 	
 	/**
 	 * Proxy
 	 * 
-	 * @return unknown_type
+	 * @return Blueprint\Action\RootAction 
 	 */
 	public function getRoot()
 	{
-		if ($this->lastAction === null || 
-		  !($this->lastAction instanceof AbstractAction)) {
-		  	throw new Exception('There are no actions in blueprint $this->lastAction : ' . print_r($this->lastAction, true));
+        if (empty($this->actionStack)) {
+		  	throw new Exception('There are no actions in blueprint, call init()');
 		}
-		return $this->lastAction->getRoot();
+        reset($this->actionStack);
+		return current($this->actionStack)->getRoot();
 	}
 	
 	/**
 	 * Returns the action with the id
 	 * 
-	 * @return unknown_type
+	 * @return Blueprint\Action\AbstractAction 
 	 */
 	public function getAction($id)
 	{
-		if (!is_numeric($id)) {
-		    throw new Exception('Id must be numeric, given: ' . gettype($id));
-		}
-		$id = (integer) $id;
-		if (!isset($this->actionStack[$id])) {
+		if (!$this->hasAction($id)) {
 			throw new Exception("There is no action with id : $id in blueprint");
 		}
-		return $this->actionStack[$id];
+		return $this->actionStack[(integer) $id];
 	}
+
+    /**
+     *
+     */
+    public function getActions()
+    {
+        return $this->actionStack;
+    }
 	
 	/**
 	 * 
-	 * @param unknown_type $actionId
-	 * @param unknown_type $input
-	 * @return unknown_type
+	 * @param numeric $actionId
+	 * @param string $input
+	 * @return void 
 	 */
 	public static function updateActionInputData($actionId, $input)
 	{
-		DbRegistry::getInstance('\Gbili\Miner\Blueprint\Action\Savable')->updateActionInputData($actionId, $input);
+		\Gbili\Db\Registry::getInstance('\Gbili\Miner\Blueprint\Action\Savable')->updateActionInputData($actionId, $input);
 	}
 }

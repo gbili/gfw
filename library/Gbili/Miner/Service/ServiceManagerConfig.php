@@ -30,6 +30,7 @@ class ServiceManagerConfig implements ConfigInterface
         'PersistanceListenerAggregate'                  => 'Gbili\Miner\Service\PersistanceListenerAggregateFactory', 
         'LexerListenerAggregate'                        => 'Gbili\Miner\Service\LexerListenerAggregateFactory', 
         'Thread'                                        => 'Gbili\Miner\Service\ThreadFactory',
+        'FlowEvaluator'                                 => 'Gbili\Miner\Service\FlowEvaluatorFactory',
         'Application'                                   => 'Gbili\Miner\Service\ApplicationFactory',
         'ApplicationListenerAggregate'                  => 'Gbili\Miner\Service\ApplicationListenerAggregateFactory',
         'Blueprint'                                     => 'Gbili\Miner\Service\BlueprintFactory',

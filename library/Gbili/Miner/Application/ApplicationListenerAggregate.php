@@ -7,6 +7,7 @@ use Zend\EventManager\ListenerAggregateTrait;
 
 /**
  * 
+ * Binds the application to thread events
  * @author g
  *
  */
@@ -30,7 +31,7 @@ class ApplicationListenerAggregate implements ListenerAggregateInterface
     }
     
     /**
-     * 
+     * Outdated 
      * @param EventManagerInterface $events
      * @throws Exception
      */
@@ -39,8 +40,6 @@ class ApplicationListenerAggregate implements ListenerAggregateInterface
         $identifiers = $events->getIdentifiers();
         if (in_array('Gbili\Miner\Application\Thread', $identifiers)) {
             //$this->listeners[] = $events->attach('placeSameAction.post', array($this->application, 'moreResults'));
-        } else {
-            throw new Exception('EventManger not supported by ' . __CLASS__);
         }
     }
 }

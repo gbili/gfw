@@ -39,22 +39,14 @@ class RootGetContents extends GetContents implements RootAction
     }
     
     /**
-     * @todo root should be another class
      *
-     * @throws Exception
      */
     public function getInput()
     {
         if ($this->isFirstCallToExecuteForRoot()) {
             return $this->getBootstrapDataAndDiscardItForNextExecute();
         }
-        if ($this->needsInputFromOtherThanParent()) {
-            return $this->getInputFromAction($this->getBlueprint()->getAction($this->otherInputActionId), $this->otherActionGroupForInputData);
-        }
-        if ($this->hasCallbackWrapper()) {
-            return $this->getInputFromCallback();
-        }
-        return null; // throw new Exception('Root can only get input from 1. bootstrapInput, 2. otherInputActionId (different than parent (would be itself)), 3. callback');
+        return parent::getInput();
     }
     
     /**
@@ -89,14 +81,16 @@ class RootGetContents extends GetContents implements RootAction
     protected function innerClear()
     {
         $this->isExecuted = false;
-        $this->result     = null;
-    
-        if ($this->hasCallbackWrapper()) {
-            $this->getCallbackWrapper()->rewindLoop();
-            //now, inputDataWhenRoot can also be used as a placeholder for callback output
-            //as it is allways used as input when not null, make sure it is null so on next
-            //execution the input will be taken from the parent new result ???????? Really??
-            $this->bootstrapInputData = null;//empty placeholder
-        }
+        parent::innerClear();
+    }
+
+    /**
+     * When root you dont want to set the parent
+     */
+    public function hydrate(array $info)
+    {
+        $info = array_diff_key($info, array_flip(array('parentId')));
+        parent::hydrate($info);
+		$this->setBootstrapData($info['data']);
     }
 }

@@ -396,24 +396,29 @@ implements \Gbili\Db\DbInterface
 	 * 
 	 * @param $sql
 	 * @param $values
-	 * @param $idColumnName
-	 * @param $returnId
-	 * @return unknown_type
+	 * @param $idColumnName if
+	 * @param $returnId @todo needs to be removed
+	 * @return mixed
 	 */
-	public function existsElement($sql, array $values, $idColumnName = null, $returnId = false)
+	public function existsElement($sql, array $values, $idColumnName = null)
 	{
 		$res = $this->getResultSet($sql, $values);
-		if (false === $returnId) {
-			//the user wants only a boolean result
+		//the user wants to get the id or false
+		if (null === $idColumnName) {
 			return (boolean) $res;
 		}
-		//arrived here then the user wants to get the id or false
-		if (null === $idColumnName) {
-			throw new Exception('You must specify the $idColumnName parameter, if you want to be able to get the id in existsElement()');
-		}
-		//return the id if the res is an array or return false
-		return (is_array($res) && !empty($res))? $res[0][(string) $idColumnName] : false;
+		return $this->getIdOrFalse($res, $idColumnName);
 	}
+
+    /**
+     *
+     * return the id if the res is an array or return false
+     */
+    protected function getIdOrFalse($res, $idColumnName)
+    {
+		return (is_array($res) && !empty($res))? $res[0][(string) $idColumnName] : false;
+    }
+
 
     /**
      * Where clause composed from critera 

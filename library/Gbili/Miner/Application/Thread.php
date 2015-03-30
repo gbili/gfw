@@ -3,7 +3,6 @@ namespace Gbili\Miner\Application;
 
 use Gbili\Miner\Blueprint\Action\AbstractAction;
 use Gbili\Miner\Application\Application;
-use Gbili\Miner\Blueprint;
 use Gbili\Miner\AttachableListenersInterface;
 
 use Zend\EventManager\EventManagerAwareTrait;
@@ -42,13 +41,9 @@ class Thread implements EventManagerAwareInterface, AttachableListenersInterface
 	 * 
 	 * @return void
 	 */
-	public function __construct(Blueprint $blueprint)
+	public function __construct(\Gbili\Miner\Blueprint\Action\RootAction $rootAction)
 	{ 
-		$this->action    = $blueprint->getRoot();
-		
-        if (isset($config['limited_results_action_id'])) {
-            $this->defaultListeners[] = 'ResultsPerActionGaugeListenerAggregate';
-        }
+		$this->action = $rootAction;
 	}
 	
     /**
@@ -58,6 +53,18 @@ class Thread implements EventManagerAwareInterface, AttachableListenersInterface
     {
         return $this->defaultListeners;
     }
+
+    public function addListener($listener)
+    {
+        if (!$this->hasListener($listener)) {
+            $this->defaultListeners[] = $listener;
+        }
+    }
+
+    public function hasListener($listener)
+    {
+        return in_array($listener, $this->defaultListeners);
+    }  
     
 	/**
 	 * 

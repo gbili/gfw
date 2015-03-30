@@ -26,17 +26,23 @@ abstract class AbstractAction
 	const EXECUTION_SUCCESS        = true;
 	const EXECUTION_FAIL           = false;
 
+    /**
+     * Needed in extract action for input group
+     * @var array
+     */
+    protected $hydrationInfo;
+
 	/**
 	 * 
-	 * @var unknown_type
+	 * @var integer 
 	 */
-	private $id = null;
+	private $id;
 	
 	/**
 	 * 
 	 * @var Blueprint
 	 */
-	private $blueprint = null;
+	private $blueprint;
 	
 	/**
 	 * Lets the Miner_Persistance_Persistance know whether
@@ -56,7 +62,7 @@ abstract class AbstractAction
 	 * 
 	 * @var AbstractAction
 	 */
-	protected $rootAction = null;
+	protected $rootAction;
 	
 	/**
 	 * Points to the parent action which
@@ -73,13 +79,20 @@ abstract class AbstractAction
 	protected $childActionsCollection = null;
 	
 	/**
-	 * The group in the parent results from which
-	 * this object will get its input data when
-	 * callin getParent()->getResult(_groupForInputData)
+     * An action can take input from different
+     * actions: either parent or a child action.
+     * Input groups are stored as actionId -> inputGroup
 	 * 
 	 * @var integer
 	 */
-	protected $groupForInputData = null;
+	protected $inputGroupByInputAction = array();
+
+    /**
+     * Contains the input action when not parent
+     *
+     * @var AbstractAction
+     */
+    protected $inputAction;
 	
 	/**
 	 * 
@@ -129,27 +142,11 @@ abstract class AbstractAction
 	 * 
 	 * @var unknown_type
 	 */
-	protected $otherActionInput = null;
-	
-	/**
-	 * Contains the action id from
-	 * which this action will take
-	 * input once it is available
-	 * 
-	 * @var unknown_type
-	 */
-	protected $otherInputAction = null;
-	
-	/**
-	 * Group number for input from other action
-	 * 
-	 * @var unknown_type
-	 */
-	protected $otherActionGroupForInputData = null;
+	protected $actionInput;
 	
 	/**
 	 * 
-	 * @return unknown_type
+	 * @return void 
 	 */
 	public function __construct()
 	{
@@ -211,44 +208,58 @@ abstract class AbstractAction
 	 * Returns the action that should 
 	 * be used as input when available
 	 * 
-	 * @return unknown_type
+	 * @return AbstractAction 
 	 */
-	public function getOtherInputAction()
+	public function getInputAction()
 	{
-		if (null === $this->otherInputAction) {
-			throw new Exception("There is no other input actionId");
-		}
-		return $this->otherInputAction;
+        return (null === $this->inputAction || (!$this->inputAction->isExecuted()))
+            ? $this->getParent() 
+            : $this->inputAction;
 	}
 	
 	/**
-	 * Returns the action that should 
-	 * be used as input when available
+     * An action can take input from parent by default
+     * or from another action. inputAction holds the
+     * other action.
+     * The inputGroupByInputAction holds input group
+     * by actionId.
 	 * 
 	 * @return unknown_type
 	 */
-	public function setOtherInputActionInfo(AbstractAction $action, $groupForInputData = null)
+	public function setInputActionInfo(AbstractAction $action, $inputGroup = null)
 	{
-		$this->otherInputAction             = $action;
-		$this->otherActionGroupForInputData = $groupForInputData;
+        if ($action !== $this->getParent()) {
+            $this->inputAction = $action;
+        }
+        if (is_numeric($inputGroup)) {
+            $this->inputGroupByInputAction[$action->getId()] = (integer) $inputGroup;
+        }
 	}
-	
-	/**
-	 * 
-	 * @return boolean
-	 */
-	public function injectsParent()
-	{
-	    return $this->injectsParent;
-	}
-	
-	/**
-	 * 
-	 */
-	public function setInjectsParent()
-	{
-	    $this->injectsParent = true;
-	}
+
+    /**
+     *
+     * @throws Exception when not set
+     * @return mixed:null|integer
+     */
+    public function getInputGroup(AbstractAction $action=null)
+    {
+        if (null === $action) {
+            $action = $this->getInputAction();
+        }
+        $id = $action->getId();
+        if (isset($this->inputGroupByInputAction[$id])) {
+            return $this->inputGroupByInputAction[$id];
+        }
+        return null;
+    }
+
+    /**
+     * Tells whether the input group has been set
+     */
+    public function hasInputGroup()
+    {
+        return $this->getInputGroup() !== null;
+    }
 	
 	/**
 	 * 
@@ -404,21 +415,6 @@ abstract class AbstractAction
 	}
 	
 	/**
-	 * The group from parent results where this action
-	 * will take its input data
-	 * 
-	 * @param $groupNumber
-	 * @return unknown_type
-	 */
-	public function setInputDataGroup($group)
-	{
-		if (!($this->getParent() instanceof Extract)) {
-			throw new Exception('The parent action must be of type Extract in order to set the group for input data');
-		}
-		$this->groupForInputData = $group;
-	}
-	
-	/**
 	 * Tell whether engine should create new video entity
 	 * instance from this action
 	 * @TODO the new instance generatig point has a flaw when it is attached to an Extract action with matchAll
@@ -533,8 +529,8 @@ abstract class AbstractAction
 	protected function parentIsExtractButDoesNotHaveTheInputGroupIAmReferringTo()
 	{
 	    return ($this->getParent() instanceof Extract 
-    	      && null !== $this->groupForInputData 
-    	      && !$this->getParent()->hasGroup($this->groupForInputData));
+    	      && $this->hasInputGroup()
+    	      && !$this->getParent()->hasGroup($this->getInputGroup()));
 	}
 	
 	/**
@@ -557,7 +553,6 @@ abstract class AbstractAction
 	 * the first result
 	 * 
 	 * @note make sure to call clear from the last child
-	 * 
 	 */
 	public function clear()
 	{
@@ -603,4 +598,33 @@ abstract class AbstractAction
 	    $str .= "Input    : {$this->getInput()}\n";
 	    return $str;
 	}
+
+    public function getHydrationInfo()
+    {
+        return $this->hydrationInfo;
+    }
+
+    /**
+     * @param $info array
+     * @return void 
+     */
+    public function hydrate(array $info)
+    {
+        $this->hydrationInfo = $info;
+        $this->setId($info['actionId']);
+        //Only set parent when not root
+        if (isset($info['parentId']) && $this->getBlueprint()->hasAction($info['parentId']) && $info['parentId'] !== $info['actionId']) {
+            $parent = $this->getBlueprint()->getAction($info['parentId']);
+            $parent->addChild($this);
+        }
+        if (isset($info['title'])) {
+            $this->setTitle($info['title']);
+        }
+        if (isset($info['isOpt'])) {
+            $this->setAsOptional($info['isOpt']);
+        }
+        if (isset($info['isNewInstanceGeneratingPoint']) && $info['isNewInstanceGeneratingPoint']) {
+	        $this->setAsNewInstanceGeneratingPoint();
+        }
+    }
 }

@@ -92,19 +92,37 @@ class Extract extends AbstractAction
 	 * @param $nextActionInputDataGroupNumber
 	 * @return unknown_type
 	 */
-	public function __construct($regexStr, $useMatchAll = false)
+	public function __construct($useMatchAll = false)
 	{
 		parent::__construct();
+		$this->initInterceptHook();
+	}
+
+    /**
+     * @param $regexStr mixed:string|\Gbili\Regex\String\AbstractString
+     * @return self
+     */
+    public function setRegexStr($regexStr)
+    {
 		if (is_string($regexStr)) {
 			$regexStr = new \Gbili\Regex\String\Generic($regexStr);
 		}
 		if (!($regexStr instanceof \Gbili\Regex\String\AbstractString)) {
 			throw new Extract\Exception('Action extract constructor first parameter must be of type string or instance of Regex_String_Abstract');
 		}
-		$this->regexStr    = $regexStr;
+		$this->regexStr = $regexStr;
+        return $this;
+    }
+
+    /**
+     * @param $useMatchAll
+     * @return self
+     */
+    public function setUseMatchAll($useMatchAll = false)
+    {
 		$this->useMatchAll = (boolean) $useMatchAll;
-		$this->initInterceptHook();
-	}
+        return $this;
+    }
 	
 	/**
 	 * 
@@ -226,7 +244,7 @@ class Extract extends AbstractAction
 		if (!$this->knowsWhereToGetInputFrom()) {
 			throw new Exception('call setGroupForInputData($group), when the parentAction is an instance of Extract');
     	}
-	    return $this->getParent()->getResult($this->groupForInputData);
+	    return $this->getParent()->getResult($this->getInputGroup());
 	}
 
 	/**
@@ -235,7 +253,7 @@ class Extract extends AbstractAction
 	 */
 	protected function knowsWhereToGetInputFrom()
 	{
-	    return !($this->getParent() instanceof Extract && null === $this->groupForInputData);
+	    return !($this->getParent() instanceof Extract && $this->hasInputGroup());
 	}
 
 	/**
@@ -349,4 +367,28 @@ class Extract extends AbstractAction
 	{
 	    return true === $this->useMatchAll && true === $this->regex->hasMoreMatches();
 	}
+
+    /**
+     * Every time an action has a parent of type extract,
+     * set the input group of that child action.
+     *
+     * @param $action AbstractAction
+     */
+    public function addChild(AbstractAction $action)
+    {
+        parent::addChild($action);
+        $info = $action->getHydrationInfo();
+        $action->setInputActionInfo($this, $info['inputGroup']);
+    }
+
+    /**
+     * @see parent
+     */
+    public function hydrate(array $info)
+    {
+        parent::hydrate($info);
+        $this->setRegexStr($info['data']);
+        $this->setUseMatchAll(1 === (integer) $info['useMatchAll']);
+        $this->getBlueprint()->initActionExtract($this);
+    }
 }

@@ -78,7 +78,7 @@ extends AbstractSavable
 		}
 		return $this->getElement('groupResultMapping');
 	}
-	
+
 	/**
 	 * 
 	 * @return unknown_type
@@ -87,7 +87,7 @@ extends AbstractSavable
 	{
 		return $this->isSetKey('groupResultMapping');
 	}
-	
+
 	/**
 	 * Proxy + added functionality (allow to set entity and method intercept at same time)
 	 * @param unknown_type $group
@@ -124,7 +124,7 @@ extends AbstractSavable
 		}
 		return $this;
 	}
-	
+
 	/**
 	 * Proxy
 	 * 
@@ -137,7 +137,7 @@ extends AbstractSavable
 		$this->getGroupResultMapping()->interceptGroupsOneByOne($groups, $methodName);
 		return $this;
 	}
-	
+
 	/**
 	 * Proxy
 	 * 
@@ -150,6 +150,4 @@ extends AbstractSavable
 		$this->getGroupResultMapping()->interceptGroupsTogether($groups, $methodName);
 		return $this;
 	}
-	
-	
 }

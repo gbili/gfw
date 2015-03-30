@@ -2,7 +2,6 @@
 namespace Gbili\Miner\Blueprint\Action\GetContents;
 
 use Gbili\Miner\Blueprint\Action\Savable\AbstractSavable, 
-    Gbili\Miner\Blueprint\Action\ClassMethodLoader, 
     Gbili\Miner\Blueprint;
 
 /**
@@ -27,41 +26,26 @@ extends AbstractSavable
 	 * 
 	 * @return unknown_type
 	 */
-	public function hasCallbackMethod()
+	public function hasCallable()
 	{
-		return $this->isSetKey('callbackMethod');
+		return $this->isSetKey('callable');
 	}
 	
 	/**
 	 * 
-	 * @param unknown_type $methodName
+	 * @param mixed:string|array $callable
 	 * @throws Exception
 	 * @return \Gbili\Miner\Blueprint\Action\GetContents\Savable
 	 */
-	public function setCallbackMethod($methodName)
+	public function setCallable($callable, $methodName=null)
 	{
-		if (!is_string($methodName)) {
-			throw new Exception('the method name must be passed as a string');
-		}
 		if (!$this->hasBlueprint()) {
 			throw new Exception('The blueprint must be set in order tu map the action to its callback method');
 		}
-		if ($this->getBlueprint()->hasCallbackPath()) {
-			$path = $this->getBlueprint()->getCallbackPath();
-			$type = ClassMethodLoader::PATH_TYPE_DIRECT;
-		} else if ($this->getBlueprint()->hasBasePath()) {
-			$path = $this->getBlueprint()->getBasePath();
-			$type = ClassMethodLoader::PATH_TYPE_BASE;
-		} else {
-			throw new Exception('There is no way to find the callback class if no path is provided in blueprint');
-		}
-		if (!is_string(($className = ClassMethodLoader::loadCallbackClass($path, $this->getBlueprint()->getHost(), $type)))) {
-			throw new Exception('the class could not be loaded errors : ' . print_r(ClassMethodLoader::getErrors(), true));
-		}
-		if (false === ClassMethodLoader::methodExists($className, $methodName)) {
-			throw new Exception("the method '$methodName' does not exist in $className");
-		}
-		$this->setElement('callbackMethod', $methodName);
+        if (null !== $methodName) {
+            $callable = array($callable, $methodName);
+        }
+		$this->setElement('callable', $callable);
 		
 		return $this;
 	}
@@ -70,9 +54,9 @@ extends AbstractSavable
 	 * 
 	 * @return unknown_type
 	 */
-	public function getCallbackMethod()
+	public function getCallable()
 	{
-		return $this->getElement('callbackMethod');
+		return $this->getElement('callable');
 	}
 	
 	/**
