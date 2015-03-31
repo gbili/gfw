@@ -17,6 +17,46 @@ class ActionTest extends \Gbili\Tests\GbiliTestCase
         $this->bp->init();
     }
 
+
+    /**
+     * @exceptionExpected
+     */
+    public function testActionMustHaveInputBeforeCallToExecute()
+    {
+        $action = new \Gbili\Miner\Blueprint\Action\GetContents();
+        $action->setId(1);
+        $action->execute();
+    }
+
+    /**
+     * @exceptionExpected
+     */
+    public function testActionMustExecuteBeforeCallToGetResult()
+    {
+        $action = new \Gbili\Miner\Blueprint\Action\GetContents();
+        $action->setId(1);
+        $action->getResult();
+    }
+
+    public function testRootActionTakesInputAndReturnsIt()
+    {
+        $action = new \Gbili\Miner\Blueprint\Action\GetContents\RootGetContents();
+        $urlString = 'http://somedomain.com';
+        $action->setBootstrapData($urlString);
+        $this->assertEquals($urlString, $action->getInput());
+    }
+
+    /**
+     * @expectedException
+     */
+    public function testRootActionNeedsInput()
+    {
+        $action = new \Gbili\Miner\Blueprint\Action\GetContents\RootGetContents();
+        $urlString = 'http://somedomain.com';
+        $action->setBootstrapData($urlString);
+        $this->assertEquals($urlString, $action->getInput());
+    }
+
     /**
      * Tears down the fixture, for example, close a network connection
      * This method is called after a test is executed
