@@ -231,8 +231,8 @@ abstract class AbstractAction
         if ($action !== $this->getParent()) {
             $this->inputAction = $action;
         }
-        if (is_numeric($inputGroup)) {
-            $this->inputGroupByInputAction[$action->getId()] = (integer) $inputGroup;
+        if (null !== $inputGroup && '' !== $inputGroup) {
+            $this->inputGroupByInputAction[$action->getId()] = is_numeric($inputGroup)? (integer) $inputGroup : $inputGroup;
         }
 	}
 

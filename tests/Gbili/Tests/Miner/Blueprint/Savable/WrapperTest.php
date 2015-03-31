@@ -1,7 +1,7 @@
 <?php
 namespace Gbili\Tests\Miner\Blueprint\Savable;
 
-class WrapperTest extends \Gbili\Tests\GbiliTestCase
+class WrapperTest// extends \Gbili\Tests\GbiliTestCase
 {
     /**
      * Sets up the fixture, for exaple, open a network connection

@@ -1,7 +1,7 @@
 <?php
 namespace Gbili\Tests\Miner;
 
-class InstallerTest extends \Gbili\Tests\GbiliTestCase
+class InstallerTest //extends \Gbili\Tests\GbiliTestCase
 {
     /**
      * Sets up the fixture, for exaple, open a network connection
@@ -13,7 +13,6 @@ class InstallerTest extends \Gbili\Tests\GbiliTestCase
     {
         $this->installer = new \Gbili\Miner\Installer;
         $this->installer->setTableSchemaPath(__DIR__ . '/../../../../boot/conf/db/tables_dumperengine.sql');
-        return $this;
     }
 
     /**

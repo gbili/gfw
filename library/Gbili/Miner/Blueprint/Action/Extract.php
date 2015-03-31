@@ -221,7 +221,10 @@ class Extract extends AbstractAction
 
 	    if ($this->parentIsExtractButDoesNotHaveTheInputGroupIAmReferringTo()) {
             if (!$this->isOptional()) {
-                throw new \Exception('Referring to an input group that does not exist in extract parent resultset');
+                throw new \Exception(
+                    'Action ' . get_class($this) . ' : ' . $this->getTitle() . ' InputGroup: ' . print_r($this->getInputGroup(), true) . "\n"
+                    . 'Parent' . get_class($this->getParent()) . ': ' . $this->getParent()->getTitle() . "\n"
+                    . 'Referring to an input group: ' . var_export($this->getInputGroup()) .  ' that does not exist in extract parent resultset');
             }
             return false;
 	    }
@@ -253,7 +256,7 @@ class Extract extends AbstractAction
 	 */
 	protected function knowsWhereToGetInputFrom()
 	{
-	    return !($this->getParent() instanceof Extract && $this->hasInputGroup());
+	    return !($this->getParent() instanceof Extract && !$this->hasInputGroup());
 	}
 
 	/**

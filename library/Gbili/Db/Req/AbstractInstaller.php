@@ -150,7 +150,6 @@ abstract class AbstractInstaller
     public function getAdminReq()
     {
         if (null === $this->adminReq) {
-            echo 'ADAPTER PREFIX FOR ADMIN: ' . $this->getAdapterPrefix() . "\n";
             $this->adminReq = new Admin($this->getAdapterPrefix());
         }
         return $this->adminReq;

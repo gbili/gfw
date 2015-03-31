@@ -42,7 +42,6 @@ class ListenersAttacher
      */
     public function registerAttachable(AttachableListenersInterface $al)
     {
-        echo "Registered Attachable " . get_class($al) . "\n";
         if (!$al instanceof \Zend\EventManager\EventManagerAwareInterface) {
             throw new Exception('registered instance having attachable listeners, must be an instanceof EventManagerAwareInterface');
         }
@@ -84,8 +83,6 @@ class ListenersAttacher
         $identifiers = $events->getIdentifiers();
         $listeners = array_unique($attachable->getListeners());
         foreach ($listeners as $listener) {
-            echo "Listener $listener\n";
-            echo "Identifiers " . implode(', ' , $identifiers) . "\n";
             $events->attach($this->serviceManager->get($listener));
         }
     }

@@ -22,7 +22,7 @@ class Req
 extends AbstractReq
 {
 	
-	const DEFAULT_NO_INPUT_PARENT_REGEX_GROUP_NUMBER = 0;
+	const DEFAULT_NO_INPUT_PARENT_REGEX_GROUP_NUMBER = '';
 	
 	/**
 	 * 

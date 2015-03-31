@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS `Content`;
 CREATE TABLE `Content` (
   `cId` int(10) unsigned NOT NULL auto_increment,
   `url` text NOT NULL,
-  `content` text NOT NULL,
+  `content` longtext NOT NULL,
   PRIMARY KEY  (`cId`)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;

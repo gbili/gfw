@@ -25,9 +25,9 @@ abstract class AbstractSavable extends Savable
 	
 	/**
 	 * 
-	 * @var unknown_type
+	 * @var string 
 	 */
-	const DEFAULT_INPUT_PARENT_REGEX_GROUP_NUMBER = 1;
+	const DEFAULT_INPUT_PARENT_REGEX_GROUP_NUMBER = '0';
 
     public static function clearOrder()
     {
@@ -378,8 +378,7 @@ abstract class AbstractSavable extends Savable
 	
 	/**
 	 * Sets the input group to default when the parent is of type extract
-	 * otherwise it sets the input group to no group specified in requestor
-	 * 
+	 * otherwise it sets the input group to no_group specified in requestor
 	 * 
 	 * @return unknown_type
 	 */

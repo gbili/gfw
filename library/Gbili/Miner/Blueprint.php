@@ -216,7 +216,7 @@ class Blueprint
 	private function setNewInstanceGeneratingPoint()
 	{
 		$recordset = $this->getDbReq()->getBlueprintInfo($this->host);
-		if (false === $recordset) {
+		if (false === $recordset || empty($recordset)) {
 			throw new Exception('The blueprint does not exist');
 		}
         $record = current($recordset);
