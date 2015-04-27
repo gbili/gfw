@@ -24,7 +24,7 @@ class ActionTest extends \Gbili\Tests\GbiliTestCase
             'service_manager' => array(
                 'invokables' => array(
                     'PersistableInstance' => '\StdClass',
-                    'Lexer'           => '\ShopstarbuzzLexer',
+                    'Lexer'           => '\Gbili\Tests\Miner\SomeLexer',
                  )
             ),
         );

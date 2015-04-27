@@ -1,7 +1,7 @@
 <?php
 namespace Gbili\Tests\Miner\Blueprint\Action\GetContents\Contents;
 
-class MockContentsFetcher1 implements \Gbili\Miner\Blueprint\Action\GetContents\Contents\ContentsFetcherInterface
+class MockContentsFetcher2 implements \Gbili\Miner\Blueprint\Action\GetContents\Contents\ContentsFetcherInterface
 {
     public function fetch(\Gbili\Url\UrlInterface $url)
     {

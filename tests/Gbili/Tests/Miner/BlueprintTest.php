@@ -24,7 +24,7 @@ class BlueprintTest extends \Gbili\Tests\GbiliTestCase
             'service_manager' => array(
                 'invokables' => array(
                     'PersistableInstance' => '\StdClass',
-                    'Lexer'           => '\ShopstarbuzzLexer',
+                    'Lexer'           => '\Gbili\Tests\Miner\SomeLexer',
                  )
             ),
         );
@@ -49,8 +49,7 @@ class BlueprintTest extends \Gbili\Tests\GbiliTestCase
 
     public function testBlueprintReturnsRootAction()
     {
-        $isRootAction = $this->bp->getRoot() instanceof \Gbili\Miner\Blueprint\Action\RootAction;
-        $this->assertEquals($isRootAction, true);
+        $this->assertEquals($this->bp->getRoot() instanceof \Gbili\Miner\Blueprint\Action\RootAction, true);
     }
 
     /**

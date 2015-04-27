@@ -40,7 +40,7 @@ implements ContentsFetcherAggregateInterface
     public function fetch(\Gbili\Url\UrlInterface $url)
     {
         $content = false;
-        foreach ($this->fetcherList->toArray() as $fetcher) {
+        foreach ($this->fetcherList->getIterator() as $fetcher) {
             if ($content = $fetcher->fetch($url)) {
                 $this->content = $content;
                 $this->usedFetcher = $fetcher;
