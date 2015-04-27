@@ -163,20 +163,19 @@ class Blueprint
 	    return $this;
 	}
 	
-    protected function getActionClass(array $row)
+    protected function getNewAction(array $row)
     {
-        $baseClassName = '\\Gbili\\Miner\\Blueprint\\Action\\';
         $type = (integer) $row['type'];
         if ($type === self::ACTION_TYPE_EXTRACT) {
-            $class = 'Extract';
+            $handle = 'Extract';
         }
         if ($type === self::ACTION_TYPE_GETCONTENTS) {
-            $class = 'GetContents' . (($this->isActionRoot($row))? '\\RootGetContents': '');
+            $handle = (($this->isActionRoot($row))? 'Root': '') . 'GetContents';
         }
-        if (!isset($class)) {
+        if (!isset($handle)) {
             throw new Exception('Unsupported action type given : ' . print_r($row, true));
         }
-        return $baseClassName . $class;
+        return $this->getServiceManager()->get('Action' . $handle);
     }
 
 	/**
@@ -186,8 +185,7 @@ class Blueprint
 	 */
 	protected function createActionFromRow(array $row)
 	{
-        $actionClass = $this->getActionClass($row);
-        $action = new $actionClass();
+        $action = $this->getNewAction($row);
 	    $action->setBlueprint($this);
         $action->hydrate($row);
         return $action;

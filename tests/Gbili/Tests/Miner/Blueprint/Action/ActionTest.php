@@ -11,10 +11,69 @@ class ActionTest extends \Gbili\Tests\GbiliTestCase
      */
     public function setUp()
     {
+        $config = array(
+            'host'                        => 'shopstarbuzz.com',
+            'exect_time_limit'            => 86400,
+            'execution_allowed_fails_max_count' => 2,
+            'persistance_allowed_fails_max_count' => 1,
+            'unpersisted_instances_max_count' => 1,
+            'results_per_action_count'    => 5,
+            'limited_results_action_id'   => 2, //After 5 pages of category, Switch to next cateogry
+            'delay_min'                   => 10,
+            'delay_max'                   => 15,
+            'service_manager' => array(
+                'invokables' => array(
+                    'PersistableInstance' => '\StdClass',
+                    'Lexer'           => '\Gbili\Tests\Miner\SomeLexer',
+                 )
+            ),
+        );
         $host = new \Gbili\Url\Authority\Host('shopstarbuzz.com');
         $dbReq = new \Gbili\Tests\Miner\Blueprint\Db\Req;
-        $this->bp = new \Gbili\Miner\Blueprint($host, new \Zend\ServiceManager\ServiceManager, $dbReq);
+        $serviceManager = new \Zend\ServiceManager\ServiceManager(new \Gbili\Miner\Service\ServiceManagerConfig($config['service_manager']));
+        $serviceManager->setService('ApplicationConfig', $config);
+        $this->bp = new \Gbili\Miner\Blueprint($host, $serviceManager, $dbReq);
         $this->bp->init();
+    }
+
+
+    /**
+     * @expectedException \Gbili\Miner\Blueprint\Action\Exception
+     */
+    public function testActionMustHaveInputBeforeCallToExecute()
+    {
+        $action = new \Gbili\Miner\Blueprint\Action\GetContents();
+        $action->setId(1);
+        $action->execute();
+    }
+
+    /**
+     * @expectedException \Gbili\Miner\Blueprint\Action\Exception
+     */
+    public function testActionMustExecuteBeforeCallToGetResult()
+    {
+        $action = new \Gbili\Miner\Blueprint\Action\GetContents();
+        $action->setId(1);
+        $action->getResult();
+    }
+
+    public function testRootActionTakesInputAndReturnsIt()
+    {
+        $action = new \Gbili\Miner\Blueprint\Action\GetContents\RootGetContents();
+        $urlString = 'http://somedomain.com';
+        $action->setBootstrapData($urlString);
+        $this->assertEquals($urlString, $action->getInput());
+    }
+
+    /**
+     * @expectedException
+     */
+    public function testRootActionNeedsInput()
+    {
+        $action = new \Gbili\Miner\Blueprint\Action\GetContents\RootGetContents();
+        $urlString = 'http://somedomain.com';
+        $action->setBootstrapData($urlString);
+        $this->assertEquals($urlString, $action->getInput());
     }
 
     /**
