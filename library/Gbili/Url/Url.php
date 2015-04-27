@@ -20,6 +20,7 @@ use Gbili\Regex\Encapsulator\AbstractEncapsulator;
  */
 class Url
 extends AbstractEncapsulator
+implements UrlInterface
 {
 	
 	/**

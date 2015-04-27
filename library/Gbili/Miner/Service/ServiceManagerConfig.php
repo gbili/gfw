@@ -45,6 +45,10 @@ class ServiceManagerConfig implements ConfigInterface
         'Delay'                                         => 'Gbili\Miner\Service\DelayFactory',
         'ListenersAttacher'                             => 'Gbili\Miner\Service\ListenersAttacherFactory',
         'Persistance'                                   => 'Gbili\Miner\Service\PersistanceFactory',
+        'ContentsFetcherAggregate'                      => 'Gbili\Miner\Blueprint\Action\GetContents\Contents\ContentsFetcherAggregateFactory',
+        'ActionGetContents'                             => 'Gbili\Miner\Blueprint\Action\GetContentsFactory',
+        'ActionRootGetContents'                         => 'Gbili\Miner\Blueprint\Action\RootGetContentsFactory',
+        'ActionExtract'                                 => 'Gbili\Miner\Blueprint\Action\ExtractFactory',
     );
 
     /**
@@ -74,6 +78,9 @@ class ServiceManagerConfig implements ConfigInterface
     protected $shared = array(
         //'EventManager' => false,
         'PersistableInstance' => false,
+        'ActionRootGetContents' => false,
+        'ActionGetContents' => false,
+        'ActionExtract' => false,
     );
 
     /**

@@ -8,25 +8,8 @@ namespace Gbili\Miner\Blueprint\Action\GetContents\Contents;
  */
 class Savable
 extends \Gbili\Savable\Savable
+implements \Gbili\Miner\Blueprint\Action\GetContents\Contents\ContentsFetcherInterface
 {
-    /**
-     * Tells whether the contents have been
-     * fetched from storage or through the
-     * built in function file_get_contents
-     *
-     * @var boolan
-     */
-    protected $isContentsFromStorage;
-
-	/**
-	 * 
-	 * @return unknown_type
-	 */	
-	public function __construct()
-	{
-		parent::__construct();
-	}
-	
 	/**
 	 * 
 	 * @return unknown_type
@@ -68,7 +51,7 @@ extends \Gbili\Savable\Savable
 		$this->setElement('contents', $contents);
 		return $this;
 	}
-	
+
 	/**
 	 * Try to get contents from db or web, if
 	 * success set contents in instance, or just
@@ -78,58 +61,25 @@ extends \Gbili\Savable\Savable
 	 */
 	public function getContents()
 	{
-	    if ($this->hasContents()) {
-	        return $this->getElement('contents');
+	    if (!$this->hasContents()) {
+            $this->fetchContents();
 	    }
-	    
-	    if (!$this->hasUrl()) {
-	        throw new \Exception('In order to get contents you must set the url');
-	    }
-	    
-	    $contents = \Gbili\Db\Registry::getInstance($this)->getContents($this->getUrl());
-
-        if (false === $contents) {
-            $contents = $this->getFreshContents();
-        } else {
-            $this->isContentsFromStorage = true;
-        }
-
-	    if (false !== $contents) {
-	        $this->setContents($contents);
-	    }
-	    
-	    return $contents;
-	}
-
-	/**
-	 * Get contents from builtin function not from db
-     *
-	 * @return mixed:false|string 
-	 */
-	public function getFreshContents()
-	{
-        $result = file_get_contents($this->getUrl()->toString());
-        $this->isContentsFromStorage = false;
-        if (false !== $result) {
-    	    $result = \Gbili\Encoding\Encoding::utf8Encode($result);
-        }
-	    return $result;
+        return $this->getElement('contents');
 	}
 
     /**
-     * Have the contents been fetched from the
-     * built in method file_get_contents just now
-     * or do they come from storage
-     * @return boolean
+     * Gets the contents from 
+     * @return self
      */
-    public function isFreshContents()
+    public function fetch(\Gbili\Url\UrlInterface $url)
     {
-        if (null === $this->isContentsFromStorage) {
-            throw new \Exception('Call getContents() before ' . __FUNCTION__);
+        $this->setUrl($url);
+        if ($contents = \Gbili\Db\Registry::getInstance($this)->getContents($this->getUrl())) {
+            $this->setContents($contents);
         }
-        return !$this->isContentsFromStorage;
+        return $contents;
     }
-	
+
 	/**
 	 * 
 	 * @return unknown_type

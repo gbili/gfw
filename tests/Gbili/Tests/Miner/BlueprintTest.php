@@ -11,9 +11,28 @@ class BlueprintTest extends \Gbili\Tests\GbiliTestCase
      */
     public function setUp()
     {
+        $config = array(
+            'host'                        => 'shopstarbuzz.com',
+            'exect_time_limit'            => 86400,
+            'execution_allowed_fails_max_count' => 2,
+            'persistance_allowed_fails_max_count' => 1,
+            'unpersisted_instances_max_count' => 1,
+            'results_per_action_count'    => 5,
+            'limited_results_action_id'   => 2, //After 5 pages of category, Switch to next cateogry
+            'delay_min'                   => 10,
+            'delay_max'                   => 15,
+            'service_manager' => array(
+                'invokables' => array(
+                    'PersistableInstance' => '\StdClass',
+                    'Lexer'           => '\ShopstarbuzzLexer',
+                 )
+            ),
+        );
         $host = new \Gbili\Url\Authority\Host('shopstarbuzz.com');
         $dbReq = new Blueprint\Db\Req;
-        $this->bp = new \Gbili\Miner\Blueprint($host, new \Zend\ServiceManager\ServiceManager, $dbReq);
+        $serviceManager = new \Zend\ServiceManager\ServiceManager(new \Gbili\Miner\Service\ServiceManagerConfig($config['service_manager']));
+        $serviceManager->setService('ApplicationConfig', $config);
+        $this->bp = new \Gbili\Miner\Blueprint($host, $serviceManager, $dbReq);
         $this->bp->init();
     }
 

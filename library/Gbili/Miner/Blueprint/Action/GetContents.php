@@ -15,6 +15,12 @@ use Gbili\Encoding\Encoding;
 class GetContents
 extends AbstractAction
 {
+
+    /**
+     * @var \Gbili\Miner\Blueprint\Action\GetContents\ContentsInterface the class responsible for getting the contents
+     */
+    protected $fetcherAggregate;
+
 	/**
 	 * 
 	 * @var unknown_type
@@ -74,7 +80,6 @@ extends AbstractAction
 	}
 	
 	/**
-	 * 
      * @todo  the input needs to be a string so: 
      *        1st. check if action has been executed.
      *        2nd A. if it is not the case, dont throw, instead allow event listeners to return a string.
@@ -167,6 +172,31 @@ extends AbstractAction
 		
 		return $this->executionSucceed = true;
 	}
+
+    /**
+     * The object used to get the contents from whatever support
+     *
+     * @return \Gbili\Miner\Blueprint\Action\GetContents\ContentsInterface
+     */
+    public function getFetcherAggregate()
+    {
+        if (null === $this->fetcherAggregate) {
+            throw new \Exception('No fetcher aggregate was set');
+        }
+        return $this->fetcherAggregate;
+    }
+
+    /**
+     * The object used to get the contents from whatever support
+     *
+     * @param \Gbili\Miner\Blueprint\Action\GetContents\ContentsInterface
+     * @return self
+     */
+    public function setFetcherAggregate(\Gbili\Miner\Blueprint\Action\GetContents\Contents\ContentsFetcherAggregateInterface $fetcherAggregate)
+    {
+        $this->fetcherAggregate = $fetcherAggregate;
+        return $this;
+    }
 	
 	/**
 	 * Allow reuse of fetched contents
@@ -174,23 +204,27 @@ extends AbstractAction
 	 */
 	protected function getContents(Url $url)
 	{
-        $c = new GetContents\Contents\Savable();
-        $c->setUrl($url);
-        $result = $c->getContents();
+        $fetcherAggregate = $this->getFetcherAggregate();
+        $fetcherAggregate->fetch($url);
 
-        //Apply a delay (even if it is after the actual fetching,
-        //it will delay the rest of the app, thus next fetch)
-        if ($c->isFreshContents()) {
+        if (!$result = $fetcherAggregate->getContent()) {
+            throw new \Exception('No fetcher was able to fetch contents.');
+        }
+
+        //@TODO trigger an event in the fetcher aggregate when contents are found that fetchers can listen to, and treat accordingly
+        if (get_class($fetcherAggregate->getUsedFetcher()) === '\Gbili\Miner\Blueprint\Action\GetContents\Contents\FileGetContents') {
+            //Save the contents to db for next time
+            $savable = $fetcherAggregate->getFetcher('\Gbili\Miner\Blueprint\Action\GetContents\Contents\Savable');
+            $savable->setUrl($url);
+            $savable->setContents($result);
+            $savable->save();
+            //Apply a delay (even if it is after the actual fetching,
+            //it will delay the rest of the app, thus next fetch)
             $this->getBlueprint()->getServiceManager()->get('Delay')->reset()->apply();
         }
-
-        if (false !== $result) {
-            $c->save();
-        }
-
 	    return $result;
 	}
-	
+
 	/**
 	 * (non-PHPdoc)
 	 * @see Blueprint/Miner\Persistance\Blueprint\Action#clear()

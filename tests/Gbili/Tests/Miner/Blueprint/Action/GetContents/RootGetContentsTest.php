@@ -24,6 +24,9 @@ class RootGetContentsTest extends \Gbili\Tests\GbiliTestCase
     public function testRootActionCanExecuteIfHasBootstrapData()
     {
         $action = new \Gbili\Miner\Blueprint\Action\GetContents\RootGetContents();
+        $aggr = new \Gbili\Miner\Blueprint\Action\GetContents\Contents\ContentsFetcherAggregate();
+        $aggr->addFetcher(new \Gbili\Tests\Miner\Blueprint\Action\GetContents\Contents\MockContentsFetcher1());
+        $action->setFetcherAggregate($aggr);
         $urlString = 'http://somedomain.com';
         $action->setBootstrapData($urlString);
         $action->execute();
@@ -32,6 +35,9 @@ class RootGetContentsTest extends \Gbili\Tests\GbiliTestCase
     public function testCanGetResultIfExecuted()
     {
         $action = new \Gbili\Miner\Blueprint\Action\GetContents\RootGetContents();
+        $aggr = new \Gbili\Miner\Blueprint\Action\GetContents\Contents\ContentsFetcherAggregate();
+        $aggr->addFetcher(new \Gbili\Tests\Miner\Blueprint\Action\GetContents\Contents\MockContentsFetcher1());
+        $action->setFetcherAggregate($aggr);
         $urlString = 'http://somedomain.com';
         $action->setBootstrapData($urlString);
         $action->execute();
@@ -39,7 +45,7 @@ class RootGetContentsTest extends \Gbili\Tests\GbiliTestCase
     }
 
     /**
-     * @expectedException
+     * @expectedException \Gbili\Miner\Blueprint\Action\GetContents\Exception
      */
     public function testRootActionNeedsInputBeforeCallToExecute()
     {
