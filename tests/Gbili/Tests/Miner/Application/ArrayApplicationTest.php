@@ -34,8 +34,6 @@ class ArrayApplicationTest extends \Gbili\Tests\GbiliTestCase
         $this->rootSecondChildId = 'get website links';
         $this->rootSecondChildsFirstChildId = 'get inner pages contents';
 
-        $execCounter = 0;
-
         $config = array(
             'blueprint_type'              => 'array',
             'host'                        => 'shopstarbuzz.com',
@@ -53,8 +51,8 @@ class ArrayApplicationTest extends \Gbili\Tests\GbiliTestCase
                     'Lexer'           => '\Gbili\Tests\Miner\SomeLexer',
                  ),
                  'factories' => array(
-                    'DumpActionId' => function ($sm) use ($execCounter) { 
-                        return new \Zend\Stdlib\CallbackHandler(function($e) use ($execCounter) { 
+                    'LoggerVarDump' => function ($sm) { 
+                        return new \Zend\Stdlib\CallbackHandler(function($e) { 
                             echo '-----' . \Gbili\Tests\Miner\Application\ArrayApplicationTest::$counter++ . '---' . PHP_EOL;
                             echo 'Name: ' . PHP_EOL;
                             var_dump($e->getName());
@@ -111,18 +109,23 @@ class ArrayApplicationTest extends \Gbili\Tests\GbiliTestCase
                 ),*/
                 //@TODO make sure these listeners get hooked to the right actions
                 //either through shared event manager or with some id checking etc.
-                array($this->rootActionId, 'execute.post', 'DumpActionId', 2),
-                array($this->rootActionId, 'hasMoreResults', 'DumpActionId', 2),
-                array($this->rootActionId, 'executeInput', 'DumpActionId', 2),
-                array($this->rootFirstChildId, 'execute.post', 'DumpActionId', 2),
-                array($this->rootFirstChildId, 'hasMoreResults', 'DumpActionId', 2),
-                array($this->rootFirstChildId, 'executeInput', 'DumpActionId', 2),
-                array($this->rootSecondChildId, 'execute.post', 'DumpActionId', 3),
-                array($this->rootSecondChildId, 'hasMoreResults', 'DumpActionId', 3),
-                array($this->rootSecondChildId, 'executeInput', 'DumpActionId', 3),
-                array($this->rootSecondChildsFirstChildId, 'execute.post', 'DumpActionId', 2),
-                array($this->rootSecondChildsFirstChildId, 'hasMoreResults', 'DumpActionId', 2),
-                array($this->rootSecondChildsFirstChildId, 'executeInput', 'DumpActionId', 2),
+                //Way 1 to add listeners
+                $this->rootActionId => array(
+                    array('execute.post', 'LoggerVarDump', 2),
+                    array('hasMoreResults', 'LoggerVarDump', 2),
+                    array('executeInput', 'LoggerVarDump', 2),
+                ),
+                //Way 2
+                array($this->rootFirstChildId, 'execute.post', 'LoggerVarDump', 2),
+                array($this->rootFirstChildId, 'hasMoreResults', 'LoggerVarDump', 2),
+                array($this->rootFirstChildId, 'executeInput', 'LoggerVarDump', 2),
+
+                array($this->rootSecondChildId, 'execute.post', 'LoggerVarDump', 3),
+                array($this->rootSecondChildId, 'hasMoreResults', 'LoggerVarDump', 3),
+                array($this->rootSecondChildId, 'executeInput', 'LoggerVarDump', 3),
+                array($this->rootSecondChildsFirstChildId, 'execute.post', 'LoggerVarDump', 2),
+                array($this->rootSecondChildsFirstChildId, 'hasMoreResults', 'LoggerVarDump', 2),
+                array($this->rootSecondChildsFirstChildId, 'executeInput', 'LoggerVarDump', 2),
             ),
         );
         $this->app = \Gbili\Miner\Application\Application::init($config);
