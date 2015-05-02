@@ -2,7 +2,7 @@
 namespace Gbili\Tests\Miner\Blueprint\Db;
 
 class Req
-implements \Gbili\Miner\Blueprint\Db\DbInterface
+implements \Gbili\Miner\Blueprint\DbReqBlueprint\Db\DbInterface
 {
 	/**
 	 * This will get the paths an new instance

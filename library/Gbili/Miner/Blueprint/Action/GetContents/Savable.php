@@ -1,8 +1,7 @@
 <?php
 namespace Gbili\Miner\Blueprint\Action\GetContents;
 
-use Gbili\Miner\Blueprint\Action\Savable\AbstractSavable, 
-    Gbili\Miner\Blueprint;
+use Gbili\Miner\Blueprint\Action\Savable\AbstractSavable;
 
 /**
  * 
@@ -19,7 +18,7 @@ extends AbstractSavable
 	public function __construct()
 	{
 		parent::__construct();
-		$this->setElement('type', Blueprint::ACTION_TYPE_GETCONTENTS);
+		$this->setElement('type', \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_GETCONTENTS);
 	}
 	
 	/**

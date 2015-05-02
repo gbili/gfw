@@ -2,8 +2,7 @@
 namespace Gbili\Miner\Blueprint\Action\Extract;
 
 use Gbili\Miner\Blueprint\Action\Savable\AbstractSavable,
-    Gbili\Miner\Blueprint\Action\Savable\Exception,
-    Gbili\Miner\Blueprint;
+    Gbili\Miner\Blueprint\Action\Savable\Exception;
 
 /**
  * This class is not meant for any great work, just to ensure
@@ -32,7 +31,7 @@ extends AbstractSavable
 	{
 		parent::__construct();
 		//set the type on construction forced by parent
-		$this->setElement('type', (integer) Blueprint::ACTION_TYPE_EXTRACT);
+		$this->setElement('type', (integer) \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_EXTRACT);
 	}
 	
 	/**

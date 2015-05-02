@@ -2,14 +2,14 @@
 namespace Gbili\Miner\Gauge;
 
 use Gbili\Stdlib\Gauge\Events\EventsMaxGauge;
-use Gbili\Miner\AttachableListenersInterface;
+use Gbili\Miner\HasAttachableListenersInterface;
 
 /**
  * 
  * @author g
  *
  */
-class UnpersistedInstancesGauge extends EventsMaxGauge implements AttachableListenersInterface
+class UnpersistedInstancesGauge extends EventsMaxGauge implements HasAttachableListenersInterface
 {
     protected $defaultListeners = array(
         'PersistanceListenerAggregate'

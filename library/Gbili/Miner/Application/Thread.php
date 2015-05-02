@@ -3,7 +3,7 @@ namespace Gbili\Miner\Application;
 
 use Gbili\Miner\Blueprint\Action\AbstractAction;
 use Gbili\Miner\Application\Application;
-use Gbili\Miner\AttachableListenersInterface;
+use Gbili\Miner\HasAttachableListenersInterface;
 
 use Zend\EventManager\EventManagerAwareTrait;
 use Zend\EventManager\EventManagerAwareInterface;
@@ -15,7 +15,7 @@ use Zend\EventManager\EventManagerAwareInterface;
  * @author gui
  *
  */
-class Thread implements EventManagerAwareInterface, AttachableListenersInterface
+class Thread implements EventManagerAwareInterface, HasAttachableListenersInterface
 {
     use EventManagerAwareTrait;
     
@@ -41,7 +41,7 @@ class Thread implements EventManagerAwareInterface, AttachableListenersInterface
 	 * 
 	 * @return void
 	 */
-	public function __construct(\Gbili\Miner\Blueprint\Action\RootAction $rootAction)
+	public function __construct(\Gbili\Miner\Blueprint\Action\RootActionInterface $rootAction)
 	{ 
 		$this->action = $rootAction;
 	}

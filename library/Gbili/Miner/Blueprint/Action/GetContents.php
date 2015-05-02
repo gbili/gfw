@@ -1,7 +1,6 @@
 <?php
 namespace Gbili\Miner\Blueprint\Action;
 
-use Gbili\Miner\Blueprint\Action\GetContents\Callback\Wrapper;
 use Gbili\Out\Out;
 use Gbili\Url\Url; 
 use Gbili\Encoding\Encoding;
@@ -14,48 +13,19 @@ use Gbili\Encoding\Encoding;
  */
 class GetContents
 extends AbstractAction
+implements \Gbili\Miner\ContentsFetcherAggregateAwareInterface
 {
 
     /**
      * @var \Gbili\Miner\Blueprint\Action\GetContents\ContentsInterface the class responsible for getting the contents
      */
     protected $fetcherAggregate;
-
-	/**
-	 * 
-	 * @var unknown_type
-	 */
-	protected $callbackWrapper = null;
 	
 	/**
 	 * 
 	 * @var unknown_type
 	 */
 	protected $result = null;
-	
-	/**
-	 * 
-	 * @param Miner\Persistance\Blueprint\Action\GetContents\Callback\Wrapper $cW
-	 * @return unknown\type
-	 */
-	public function setCallbackWrapper(Wrapper $cW)
-	{
-		$this->callbackWrapper = $cW;
-        return $this;
-	}
-
-    public function getCallbackWrapper()
-    {
-        if (!$this->hasCallbackWrapper()) {
-            throw new \Exception('has no callback wrapper');
-        }
-        return $this->callbackWrapper;
-    }
-
-    public function hasCallbackWrapper()
-    {
-        return null !== $this->callbackWrapper;
-    }
 	
 	/**
 	 * This type of action never has final results
@@ -80,21 +50,29 @@ extends AbstractAction
 	}
 	
 	/**
-     * @todo  the input needs to be a string so: 
-     *        1st. check if action has been executed.
-     *        2nd A. if it is not the case, dont throw, instead allow event listeners to return a string.
-     *        2nd B. else if it returns some imput, pass it to the listeners and return a string
+     * @todo the input needs to be a string so: 
+     *       1st. check if action has been executed.
+     *       2nd A. if it is not the case, dont throw, instead allow event listeners to return a string.
+     *       2nd B. else if it returns some imput, pass it to the listeners and return a string
      *
 	 * @return string 
 	 */
 	protected function getInputFromAction()
 	{
         $result = $this->getInputAction()->getResult($this->getInputGroup());
-        
-        //@todo pass the result to listeners and allow them to modify it
-
         if ($result === null) {
 		    throw new Exception("Input action must be of type extract when not root, or Trying to get input from action that has not been executed");
+        }
+
+        //Allow other input action refactoring
+        $responses = $this->getEventManager()->trigger(
+            'inputFromAction', //event identifier
+            $this, //targed
+            ['input' => $result], // params
+            function ($listenerReturn) {return is_string($listenerReturn);} //Meets our expected result, will setStopped
+        );
+        if ($responses->stopped()) {
+            $result = $responses->last();
         }
 
 		return $result;
@@ -118,27 +96,16 @@ extends AbstractAction
 	 */
 	public function getInput()
 	{
-		if ($this->canGetInputFromCallback()) {
-            return $this->getInputFromCallback();
-		}
-		return $this->getInputFromAction();
-	}
-	
-    protected function canGetInputFromCallback()
-    {
-        return $this->hasCallbackWrapper() && $this->getCallbackWrapper()->hasMoreLoops() && null !== $this->lastInput;
-    }
-
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	protected function getInputFromCallback()
-	{
-        if (!$this->canGetInputFromCallback()) {
-            throw new Exception("loop reached end cannot execute anymore, call clear() || lastInput is null");
+        $responses = $this->getEventManager()->trigger(
+            'input', //event identifier
+            $this,
+            ['lastInput' => $this->lastInput],
+            function ($listenerReturn) {return is_string($listenerReturn);} //Meets our expected result, will setStopped
+        );
+        if ($responses->stopped()) {
+            return $responses->last();
         }
-        return $this->getCallbackWrapper()->apply($this->lastInput);
+		return $this->getInputFromAction();
 	}
 	
 	/**
@@ -156,6 +123,14 @@ extends AbstractAction
 
 		$input = $this->getInput();
 
+        $this->getEventManager()->trigger(
+            'executeInput',
+            $this,
+            [
+                'input' => $input,
+            ]
+        );
+
 		$url = new Url($input);
 		if (!$url->isValid()) {
 			throw new Exception("the url string is not valid given : " . print_r($url));
@@ -164,8 +139,8 @@ extends AbstractAction
 		$result = $this->getContents($url);
 		
 		if (false === $result) {
-			return $this->executionSucceed = false; //throw new Exception('file\get\contents() did not succeed, url : ' . print_r($url->toString(), true));
-		}
+            return $this->executionSucceed = false;
+        }
 		
 		$this->result     = $result;
 		$this->lastInput  = $input;
@@ -232,9 +207,6 @@ extends AbstractAction
 	protected function innerClear()
 	{
 		$this->result = null;
-		if ($this->hasCallbackWrapper()) {
-			$this->getCallbackWrapper()->rewindLoop();
-		}
 	}
 	
 	/**
@@ -243,7 +215,18 @@ extends AbstractAction
 	 */
 	protected function innerHasMoreResults()
 	{
-	    return $this->hasCallbackWrapper() && $this->getCallbackWrapper()->hasMoreLoops();
+        //Allow callbacks to tell whether they can provide more urls or not 
+        $responses = $this->getEventManager()->trigger(
+            'generateMoreResults',
+            $this,
+            [],
+            function ($listenerReturn) {return $listenerReturn;} //Meets our expected result, will setStopped
+        );
+        $moreResults = false;
+        if ($responses->stopped()) {
+            $moreResults = $responses->last();
+        }
+        return $moreResults;
 	}
 	
 	/**
@@ -254,10 +237,4 @@ extends AbstractAction
 	{
 		throw new Exception('GetContents actions never have final results, don\'t call spit().');
 	}
-
-    public function hydrate(array $info)
-    {
-        parent::hydrate($info);
-        $this->getBlueprint()->initCallbackWrapperForAction($this);
-    }
 }

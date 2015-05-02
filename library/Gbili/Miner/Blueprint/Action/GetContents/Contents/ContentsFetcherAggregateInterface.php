@@ -48,14 +48,16 @@ interface ContentsFetcherAggregateInterface extends ContentsFetcherInterface
     public function hasFetcher($fetcher);
 
     /**
-     * @return \Zend\Stdlib\PriorityQueue
-     */
-    public function getFetcherList();
-
-    /**
      * Gets the fetcher of type 
      * @param mixed:string|ContentsFetcherInterface $fetcher the desired fetcher classname or the actual fetcher (would check if it exists)
      * @return mixed:contentfetcher
      */
     public function getFetcher($fetcherClass);
+
+    /**
+     * removes the fetcher of type 
+     * @param mixed:string|ContentsFetcherInterface $fetcher the desired fetcher classname or the actual fetcher (would check if it exists)
+     * @return mixed:contentfetcher
+     */
+    public function removeFetcher($fetcherClass);
 }

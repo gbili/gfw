@@ -1,5 +1,5 @@
 <?php
-namespace Gbili\Miner;
+namespace Gbili\Miner\Blueprint;
 
 /**
  * The Blueprint takes a host as constructor parameter and with that it will
@@ -22,39 +22,10 @@ namespace Gbili\Miner;
  * @author gui
  *
  */
-class Blueprint
+class DbReqBlueprint
+extends AbstractBlueprint
+implements BlueprintInterface
 {
-	/**
-	 * The type of action
-	 * Extract
-	 * 
-	 * @var integer
-	 */
-	const ACTION_TYPE_EXTRACT = 12;
-	
-	/**
-	 * The type of action
-	 * GetContents
-	 * 
-	 * @var integer
-	 */
-	const ACTION_TYPE_GETCONTENTS = 13;
-	
-	/**
-	 * 
-	 * @var \Zend\ServiceManager\ServiceManager
-	 */
-	protected $serviceManager;
-	
-	/**
-	 * this is a flat representation of the
-	 * actions tree
-	 * So it eases access to actions
-	 * 
-	 * @var unknown_type
-	 */
-	private $actionStack = array();
-	
 	/**
 	 * Miner_Persistance::run(), will generate instances
 	 * where the actions results will be inserted.
@@ -85,11 +56,24 @@ class Blueprint
 	 * @param \Gbili\Url\Authority\Host $host
 	 * @return unknown_type
 	 */
-	public function __construct(\Gbili\Url\Authority\Host $host, \Zend\ServiceManager\ServiceManager $sm, Blueprint\Db\DbInterface $dbReq)
+	public function __construct(\Zend\ServiceManager\ServiceManager $sm)
 	{
+        $config = $sm->get('ApplicationConfig');
+        if (!isset($config['host'])) {
+            throw new Exception('Config must have a \'host\' key set with the hostname to be dumped');
+        }
+        $host = $config['host'];
+        
+        if (is_string($host)) {
+            $host = new \Gbili\Url\Authority\Host($host);
+        }
+
+        if (!$host instanceof \Gbili\Url\Authority\Host) {
+            throw new Exception('First param must be a valid url string or a Host instance.');
+        }
 		$this->host = $host;
+
 	    $this->setServiceManager($sm);
-        $this->setDbReq($dbReq);
 	}
 
     /**
@@ -104,7 +88,7 @@ class Blueprint
 		$this->manageInjections();
     }
 
-    public function setDbReq(Blueprint\Db\DbInterface $dbReq)
+    public function setDbReq(DbReqBlueprint\Db\DbInterface $dbReq)
     {
         $this->dbReq = $dbReq;
         return $this;
@@ -149,20 +133,6 @@ class Blueprint
 	/**
 	 * 
 	 */
-	public function getServiceManager()
-	{
-	    return $this->serviceManager;
-	}
-
-	/**
-	 * 
-	 */
-	public function setServiceManager(\Zend\ServiceManager\ServiceManager $sm)
-    {
-        $this->serviceManager = $sm;
-	    return $this;
-	}
-	
     protected function getNewAction(array $row)
     {
         $type = (integer) $row['type'];
@@ -191,20 +161,6 @@ class Blueprint
         return $action;
 	}
 
-    /**
-     * Add action to action stack indexed by their ids
-     * and point the current action to the latest added action
-     */
-    protected function addAction(Blueprint\Action\AbstractAction $action)
-    {
-	    $this->actionStack[$action->getId()] = $action;
-    }
-
-    public function hasAction($id)
-    {
-        return isset($this->actionStack[(integer)$id]);
-    }
-	
 	/**
 	 * Set the method and callback instances
 	 * and the new instance generating point action id
@@ -294,41 +250,6 @@ class Blueprint
             $methodWrapper = new Blueprint\Action\Extract\Method\Wrapper($this->getServiceManager(), $interceptMap);
             $action->setMethodWrapper($methodWrapper);
 		}
-    }
-	
-	/**
-	 * Proxy
-	 * 
-	 * @return Blueprint\Action\RootAction 
-	 */
-	public function getRoot()
-	{
-        if (empty($this->actionStack)) {
-		  	throw new Exception('There are no actions in blueprint, call init()');
-		}
-        reset($this->actionStack);
-		return current($this->actionStack)->getRoot();
-	}
-	
-	/**
-	 * Returns the action with the id
-	 * 
-	 * @return Blueprint\Action\AbstractAction 
-	 */
-	public function getAction($id)
-	{
-		if (!$this->hasAction($id)) {
-			throw new Exception("There is no action with id : $id in blueprint");
-		}
-		return $this->actionStack[(integer) $id];
-	}
-
-    /**
-     *
-     */
-    public function getActions()
-    {
-        return $this->actionStack;
     }
 	
 	/**

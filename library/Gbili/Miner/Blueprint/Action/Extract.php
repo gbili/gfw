@@ -75,14 +75,6 @@ class Extract extends AbstractAction
 	 * @var unknown_type
 	 */
 	private $nextStep = null;
-
-	/**
-	 * Contains the method wrapper that will
-	 * intercept the results
-	 * 
-	 * @var unknown_type
-	 */
-	private $methodWrapper = null;
 	
 	/**
 	 * 
@@ -95,7 +87,6 @@ class Extract extends AbstractAction
 	public function __construct($useMatchAll = false)
 	{
 		parent::__construct();
-		$this->initInterceptHook();
 	}
 
     /**
@@ -115,6 +106,21 @@ class Extract extends AbstractAction
     }
 
     /**
+     * @throws \Exception if not right type or not valid regex
+     * @param mixed:\Gbili\Regex\AbstractRegex|null $regex
+     */
+    public function setRegex($regex)
+    {
+        if (!$regex instanceof \Gbili\Regex\AbstractRegex) { //bug if use && or || -> call to undefined method "Action\ ()"????
+            if (null !== $regex) {
+                throw new \Exception('Pass either an instance of AbstractRegex or null');
+            }
+        }
+        $this->regex = $regex;
+        return $this;
+    }
+
+    /**
      * @param $useMatchAll
      * @return self
      */
@@ -123,24 +129,6 @@ class Extract extends AbstractAction
 		$this->useMatchAll = (boolean) $useMatchAll;
         return $this;
     }
-	
-	/**
-	 * 
-	 */
-	protected function initInterceptHook()
-	{
-	    $this->methodInterceptGroupMapping[Wrapper::INTERCEPT_TYPE_TOGETHER] = array();
-	    $this->methodInterceptGroupMapping[Wrapper::INTERCEPT_TYPE_ONEBYONE] = array();
-	}
-	
-	/**
-	 * 
-	 * @return unknown_type
-	 */
-	public function setMethodWrapper(Wrapper $mW)
-	{
-		$this->methodWrapper = $mW;
-	}
 	
 	/**
 	 * Maps each group in the regex to an entity in the application
@@ -229,12 +217,21 @@ class Extract extends AbstractAction
             return false;
 	    }
     	
-		$parentInput     = $this->getInput();
-		$this->regex     = new \Gbili\Regex\Regex($parentInput, $this->regexStr);
+		$parentInput = $this->getInput();
+
+        $this->getEventManager()->trigger(
+            'executeInput',
+            $this,
+            [
+                'input' => $parentInput,
+            ]
+        );
+
+		$this->setRegex(new \Gbili\Regex\Regex($parentInput, $this->regexStr));
 		$this->lastInput = $parentInput;
 		
-		$method = ($this->useMatchAll)? 'matchAll' : 'match';
-		return $this->isResultReady = (boolean) $this->regex->{$method}();
+        $this->regex->execute($this->useMatchAll);
+		return $this->isResultReady = $this->regex->isValid();
 		//@todo after the regex is applied, a callback should be allowed to attempt to refactor the output
 	}
 
@@ -284,17 +281,32 @@ class Extract extends AbstractAction
 		if (null === $groupIdentifier) {
 			throw new Extract\Exception('The group number cannot be null (getResult() first param)');
 		}
-		$res = $this->getResults();
+
+		$results = $this->getResults();
 		
-		if (!isset($res[$groupIdentifier])) {
+        $responses = $this->getEventManager()->trigger(
+            'interceptResult', //event identifier
+            $this, //targed
+            [ // params
+                'results' => $results, 
+                'groupIdentifier' => $groupIdentifier,
+            ]
+        );
+
+        $interceptedResults = $responses->last();
+        if (null !== $interceptedResults) {
+            $results = $interceptedResults;
+        }
+
+		if (!isset($results[$groupIdentifier])) {
             throw new Extract\Exception(
                 'The group: ' . $groupIdentifier. ', does not exist in results: ' 
-                . print_r($res, true)
+                . print_r($results, true)
                 . $this->toString()
             );
 		}
 
-		return $res[$groupIdentifier];	
+		return $results[$groupIdentifier];	
 	}
 
 	/**
@@ -308,6 +320,17 @@ class Extract extends AbstractAction
 		return $this->regex->hasGroup($groupIdentifier);
 	}
 
+    protected function isResultReadyOrThrow()
+    {
+		if (false === $this->isResultReady) {
+            if (null !== $this->regex && !$this->regex->isValid()) {
+                throw new Extract\Exception('Regex did not match a crap!');
+            }
+			throw new Extract\Exception('You must call execute() before getResult()');
+		}
+    }
+      
+
 	/**
 	 * Return all the results
 	 * 
@@ -315,33 +338,9 @@ class Extract extends AbstractAction
 	 */
 	public function getResults()
 	{	
-	    $this->isResultReadyOrThrow();
+        $this->isResultReadyOrThrow();
 		//return all groups of current match, if match all only get current match
-		return $this->getResultsAllowInterception();
-	}
-
-	/**
-	 * Allow the user to intercept the results and modify them with some method
-	 * @return \Gbili\Miner\Blueprint\Action\
-	 */
-	protected function getResultsAllowInterception()
-	{
-        $results = $this->regex->getCurrentMatch();
-	    return (null === $this->methodWrapper)? $results : $this->methodWrapper->intercept($results);
-	}
-
-	/**
-	 * 
-	 * @throws Extract\Exception
-	 */
-	protected function isResultReadyOrThrow()
-	{
-		if (false === $this->isResultReady) {
-		    if (null !== $this->regex && !$this->regex->isValid()) {
-		        throw new Extract\Exception('regex is not valid.');
-		    }
-			throw new Extract\Exception('You must call execute() before getResult()');
-		}
+	    return $this->regex->getCurrentMatch();
 	}
 	
 	/**
@@ -350,16 +349,7 @@ class Extract extends AbstractAction
 	protected function innerClear()
 	{
 		$this->isResultReady = false;
-		$this->regex = null;
-	}
-	
-	/**
-	 * 
-	 * @return boolean
-	 */
-	protected function isResultReadyForChild()
-	{
-	    return true === $this->useMatchAll && true === $this->isResultReady;
+		$this->setRegex(null);
 	}
 	
 	/**
@@ -392,6 +382,5 @@ class Extract extends AbstractAction
         parent::hydrate($info);
         $this->setRegexStr($info['data']);
         $this->setUseMatchAll(1 === (integer) $info['useMatchAll']);
-        $this->getBlueprint()->initActionExtract($this);
     }
 }

@@ -9,6 +9,7 @@ namespace Gbili\Miner\Blueprint\Action\GetContents\Contents;
 class ContentsFetcherAggregate
 implements ContentsFetcherAggregateInterface
 {
+    use \Zend\EventManager\EventManagerAwareTrait;
     /**
      * @var string the actual content
      */
@@ -44,6 +45,15 @@ implements ContentsFetcherAggregateInterface
             if ($content = $fetcher->fetch($url)) {
                 $this->content = $content;
                 $this->usedFetcher = $fetcher;
+                $this->getEventManager()->trigger(
+                    __FUNCTION__ . '.hasResult', //event identifier
+                    $this, //targed
+                    array(
+                        'fetcher' => $fetcher,
+                        'url' => $url,
+                        'content' => $content,
+                    ) // params
+                );
                 break;
             }
         }
@@ -87,10 +97,17 @@ implements ContentsFetcherAggregateInterface
      */
     public function addFetcher(\Gbili\Miner\Blueprint\Action\GetContents\Contents\ContentsFetcherInterface $fetcher, $priority=1)
     {
+        $alreadyListening = false;
         if ($this->hasFetcher($fetcher)) {
+            $alreadyListening = true;
             $this->fetcherList->remove($fetcher);
         }
         $this->fetcherList->insert($fetcher, $priority);
+
+        if (!$alreadyListening && ($fetcher instanceof \Gbili\EventManager\AttachToEventManagerInterface)) {
+            $fetcher->attachToEventManager($this->getEventManager());
+        }
+
         return $this;
     }
 
@@ -116,11 +133,29 @@ implements ContentsFetcherAggregateInterface
     }
 
     /**
+     * Protected, because when you add a fetcher,
+     * they can listen, and when you remove you need
+     * to call detach.
      * @return \Zend\Stdlib\PriorityQueue
      */
-    public function getFetcherList()
+    protected function getFetcherList()
     {
         return $this->fetcherList;
+    }
+
+    public function hasPriority($priority)
+    {
+        return $this->getFetcherList()->hasPriority($priority);
+    }
+
+    public function removeFetcher($fetcher)
+    {
+        if ($this->hasFetcher($fetcher)) {
+            $this->fetcherList->remove($fetcher);
+            if ($fetcher instanceof \Gbili\EventManager\AttachToEventManagerInterface) {
+                $fetcher->detachFromEventManager($this->getEventManager());
+            }
+        }
     }
 
     /**

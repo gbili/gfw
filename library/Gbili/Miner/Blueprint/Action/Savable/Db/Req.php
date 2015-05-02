@@ -1,14 +1,9 @@
 <?php
 namespace Gbili\Miner\Blueprint\Action\Savable\Db;
 
-use Gbili\Miner\Blueprint\Action\RootAction;
-
-use Gbili\Miner\Blueprint\Action\GetContents\RootGetContents;
-
 use Gbili\Db\Req\AbstractReq,
     Gbili\Db\Req\Exception,
     Gbili\Db\Registry,
-    Gbili\Miner\Blueprint,
     Gbili\Miner\Blueprint\Action\Savable\AbstractSavable,
     Gbili\Miner\Blueprint\Action\Extract\Savable     as ExtractSavable,
     Gbili\Miner\Blueprint\Action\GetContents\Savable as GetContentsSavable;
@@ -278,7 +273,7 @@ extends AbstractReq
 		//is it intended to be the root action?
 		if (!$action->hasParent()) {
 			//make sure it can be root action
-			if ($action->getType() !== Blueprint::ACTION_TYPE_GETCONTENTS) {
+			if ($action->getType() !== \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_GETCONTENTS) {
 				throw new Exception('Only actions of type Blueprint::ACTION_TYPE_GETCONTENTS can be root');
 			}
 			
@@ -307,7 +302,7 @@ extends AbstractReq
 		/*
 		 * 3. particular insert only if 'type' === Blueprint::ACTION_TYPE_EXTRACT and root
 		 */
-		if ($action->getType() === Blueprint::ACTION_TYPE_EXTRACT
+		if ($action->getType() === \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_EXTRACT
 		 || $action->isRoot()) {
 			if (!$action->hasData()) {
 				throw new Exception('When the action is of type Blueprint::ACTION_TYPE_EXTRACT or it is the root, you must call setData(), given: ' . print_r($actionData, true));
@@ -322,7 +317,7 @@ extends AbstractReq
 		/*
 		 * 3. save group result mapping (group to entity && group to method)
 		 */
-		if ($action->getType() === Blueprint::ACTION_TYPE_EXTRACT
+		if ($action->getType() === \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_EXTRACT
 		 && $action->hasGroupResultMapping()) {
 			$this->saveGroupResultMapping($action);
 		}
@@ -330,7 +325,7 @@ extends AbstractReq
 		/*
 		 * 4.1 particular insert only for type GetContents for setting callback
 		 */
-		if ($action->getType() === Blueprint::ACTION_TYPE_GETCONTENTS
+		if ($action->getType() === \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_GETCONTENTS
 		 && $action->hasCallable()) {
 		 	$this->saveCallback($action);
 		}

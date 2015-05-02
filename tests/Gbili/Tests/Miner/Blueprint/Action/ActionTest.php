@@ -28,11 +28,11 @@ class ActionTest extends \Gbili\Tests\GbiliTestCase
                  )
             ),
         );
-        $host = new \Gbili\Url\Authority\Host('shopstarbuzz.com');
         $dbReq = new \Gbili\Tests\Miner\Blueprint\Db\Req;
         $serviceManager = new \Zend\ServiceManager\ServiceManager(new \Gbili\Miner\Service\ServiceManagerConfig($config['service_manager']));
         $serviceManager->setService('ApplicationConfig', $config);
-        $this->bp = new \Gbili\Miner\Blueprint($host, $serviceManager, $dbReq);
+        $this->bp = new \Gbili\Miner\Blueprint\DbReqBlueprint($serviceManager);
+        $this->bp->setDbReq($dbReq);
         $this->bp->init();
     }
 

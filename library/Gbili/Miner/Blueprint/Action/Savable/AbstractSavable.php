@@ -2,7 +2,6 @@
 namespace Gbili\Miner\Blueprint\Action\Savable;
 
 use Gbili\Savable\Savable;
-use Gbili\Miner\Blueprint;
 use Gbili\Miner\Blueprint\Savable as BlueprintSavable;
 use Gbili\Miner\Blueprint\Action\Savable\Db\Req;
 use Gbili\Miner\Blueprint\Action\Extract\Savable as ExtractSavable;
@@ -154,10 +153,10 @@ abstract class AbstractSavable extends Savable
 	public static function getInstanceOfType($type)
 	{
 		switch ($type) {
-			case Blueprint::ACTION_TYPE_EXTRACT;
+			case \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_EXTRACT;
 				$instance = new ExtractSavable();
 				break;
-			case Blueprint::ACTION_TYPE_GETCONTENTS;
+			case \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_GETCONTENTS;
 				$instance = new GetContentsSavable();
 				break;
 			default;
@@ -232,7 +231,7 @@ abstract class AbstractSavable extends Savable
 	 */
 	public function isRoot()
 	{
-		return ($this->getType() === Blueprint::ACTION_TYPE_GETCONTENTS && !$this->isSetKey('parentAction'));
+		return ($this->getType() === \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_GETCONTENTS && !$this->isSetKey('parentAction'));
 	}
 	
 	/**
@@ -385,7 +384,7 @@ abstract class AbstractSavable extends Savable
 	public function getInputParentRegexGroup()
 	{
 		if (!$this->isSetKey('inputParentRegexGroup')) {
-			if ($this->hasParent() && $this->getParent()->getType() === Blueprint::ACTION_TYPE_EXTRACT) {
+			if ($this->hasParent() && $this->getParent()->getType() === \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_EXTRACT) {
 				$this->setInputParentRegexGroup(self::DEFAULT_INPUT_PARENT_REGEX_GROUP_NUMBER);
 			} else {
 				$this->setInputParentRegexGroup(Req::DEFAULT_NO_INPUT_PARENT_REGEX_GROUP_NUMBER);

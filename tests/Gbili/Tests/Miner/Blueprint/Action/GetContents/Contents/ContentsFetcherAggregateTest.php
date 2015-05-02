@@ -124,7 +124,7 @@ class ContentsFetcherAggregateTest extends \Gbili\Tests\GbiliTestCase
 
         $priority = 6;
         $aggregate->addFetcher($unsuccessfulFetcher, $priority);
-        $hasPriority = $aggregate->getFetcherList()->hasPriority($priority);
+        $hasPriority = $aggregate->hasPriority($priority);
         $this->assertEquals($hasPriority, true);
     }
 
@@ -138,8 +138,8 @@ class ContentsFetcherAggregateTest extends \Gbili\Tests\GbiliTestCase
         $newPriority = 6;
         $aggregate->addFetcher($unsuccessfulFetcher, $oldPriority);
         $aggregate->addFetcher($unsuccessfulFetcher, $newPriority);
-        $hasOldPriority = $aggregate->getFetcherList()->hasPriority($oldPriority);
-        $hasNewPriority = $aggregate->getFetcherList()->hasPriority($newPriority);
+        $hasOldPriority = $aggregate->hasPriority($oldPriority);
+        $hasNewPriority = $aggregate->hasPriority($newPriority);
         $this->assertEquals($hasOldPriority, false);
         $this->assertEquals($hasNewPriority, true);
     }
@@ -169,7 +169,7 @@ class ContentsFetcherAggregateTest extends \Gbili\Tests\GbiliTestCase
 
         //Remove the highest priority element
         unset($priorityToFetcher[$maxPriority]);
-        $aggregate->getFetcherList()->remove($fetcherWithMaxPriority);
+        $aggregate->removeFetcher($fetcherWithMaxPriority);
 
         //Get the new highest priority element
         $maxPriority = max(array_keys($priorityToFetcher));

@@ -11,10 +11,10 @@ class ThreadFactory implements \Zend\ServiceManager\FactoryInterface
      */
     public function createService(\Zend\ServiceManager\ServiceLocatorInterface $sm)
     { 
+        $config = $sm->get('ApplicationConfig');
         $blueprint = $sm->get('Blueprint');
         $rootAction = $blueprint->getRoot();
         $thread = new \Gbili\Miner\Application\Thread($rootAction);
-        $config = $sm->get('ApplicationConfig');
         if (isset($config['limited_results_action_id'])) {
             $thread->addListener('ResultsPerActionGaugeListenerAggregate');
         }

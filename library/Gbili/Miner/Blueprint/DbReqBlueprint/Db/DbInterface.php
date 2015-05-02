@@ -1,5 +1,5 @@
 <?php
-namespace Gbili\Miner\Blueprint\Db;
+namespace Gbili\Miner\Blueprint\DbReqBlueprint\Db;
 
 use Gbili\Url\Authority\Host;
 

@@ -99,7 +99,7 @@ class FlowEvaluator
      * |  |          (true)/            4.Is Optional?               
      * |  |               /           (true)/  (false)\
      * |  |              v                 v           \
-     * |  |     2.Has More Children?<__GOTO Parent      \________> could call attemptFailRecovery()          
+     * |  |     2.Has More Children?<__GOTO Parent      \________> could call attemptResume()          
      * |  |    (true)/    (false)\              ^   
      * |  |         v             v              \   
      * ---|-GOTO Next Child   3.Has More Results? \                    
@@ -109,7 +109,7 @@ class FlowEvaluator
      */
     public function evaluate()
     {
-        $action = $this->thread->getAction();
+        $action = $this->getActionInFlow();
         
         if (!$action->executionSucceed()) {//1.
             if ($action->isRoot() || !($action->isOptional())) { //4.
@@ -141,8 +141,12 @@ class FlowEvaluator
         return $this->updateCanExecuteActionInFlow(true);
     }
     
-    public function attemptFailRecovery()
+    public function attemptResume()
     {
+        $action = $this->getActionInFlow();
+        if ($action->isRoot() && !$action->hasMoreResults()) {
+            return false; // Reached end of script, nothing else left to do
+        }
         //@todo but what happens if for example it is a connection problem for get contents? those errors should be managed differently no?
         $this->thread->retakeFlowFromParent();
         return $this->evaluate();

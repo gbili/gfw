@@ -2,7 +2,6 @@
 namespace Gbili\Miner\Blueprint\Action;
 
 use Zend\EventManager\EventManagerAwareTrait;
-use Gbili\Miner\Blueprint;
 use Gbili\Stdlib\CircularCollection;
 use Gbili\Out\Out;
 
@@ -19,12 +18,10 @@ use Gbili\Out\Out;
  * @author gui
  *
  */
-abstract class AbstractAction
+abstract class AbstractAction implements \Gbili\Miner\EventManagerAwareSharedManagerExpectedInterface
 {
-	use EventManagerAwareTrait;
-	
-	const EXECUTION_SUCCESS        = true;
-	const EXECUTION_FAIL           = false;
+	const EXECUTION_SUCCESS = true;
+	const EXECUTION_FAIL    = false;
 
     /**
      * Needed in extract action for input group
@@ -40,7 +37,7 @@ abstract class AbstractAction
 	
 	/**
 	 * 
-	 * @var Blueprint
+	 * @var \Gbili\Miner\BlueprintInterface
 	 */
 	private $blueprint;
 	
@@ -143,6 +140,12 @@ abstract class AbstractAction
 	 * @var unknown_type
 	 */
 	protected $actionInput;
+
+    /**
+     * @var \Zend\EventManager\EventManagerInterface
+     */
+    protected $events;
+
 	
 	/**
 	 * 
@@ -150,8 +153,39 @@ abstract class AbstractAction
 	 */
 	public function __construct()
 	{
-		
 	}
+
+    public function setEventManager(\Zend\EventManager\EventManagerInterface $events)
+    {
+        $this->events = $events;
+    }
+
+    public function getEventManager()
+    {
+        if (!$this->events) {
+            $this->setEventManager(new \Zend\EventManager\EventManager());
+        }
+        return $this->events;
+    }
+
+    /**
+     * This is how listeners can attach to a specific action identified
+     * by its id
+     * attach(actionId, eventName, callback, priority)
+     */
+    protected function setEventManagerIdentifiers()
+    {
+        if (null === $this->id) {
+            throw new \Exception('Make sure you set the id before calling this');
+        }
+        $classnameParts = explode('\\', get_class($this));
+        $classname = end($classnameParts);
+        $this->getEventManager()->setIdentifiers([
+            implode('.', [$classname, $this->getId()]), //"Extract.some id with spaces ok"
+            $this->getId(), //"some id with spaces ok"
+            get_class($this), //\Gbili\Miner\Blueprint\Action\Extract
+        ]);
+    }
 	
 	/**
 	 * 
@@ -160,7 +194,9 @@ abstract class AbstractAction
 	 */
 	public function setId($id)
 	{
-		$this->id = (integer) $id;
+		$this->id = $id;
+        $this->setEventManagerIdentifiers();
+        return $this;
 	}
 	
 	/**
@@ -263,7 +299,7 @@ abstract class AbstractAction
 	
 	/**
 	 * 
-	 * @return \Gbili\Miner\Blueprint
+	 * @return \Gbili\Miner\BlueprintInterface
 	 */
 	public function getBlueprint()
 	{
@@ -275,10 +311,10 @@ abstract class AbstractAction
 	
 	/**
 	 * 
-	 * @param Blueprint $b
+	 * @param \Gbili\Miner\BlueprintInterface $b
 	 * @return unknown_type
 	 */
-	public function setBlueprint(Blueprint $b)
+	public function setBlueprint(\Gbili\Miner\Blueprint\BlueprintInterface $b)
 	{
 		$this->blueprint = $b;
 	}
@@ -325,9 +361,9 @@ abstract class AbstractAction
 	
 	/**
 	 * 
-	 * @param \Gbili\Miner\Blueprint\Action\RootAction $action
+	 * @param \Gbili\Miner\Blueprint\Action\RootActionInterface $action
 	 */
-	public function setRoot(RootAction $action)
+	public function setRoot(\Gbili\Miner\Blueprint\Action\RootActionInterface $action)
 	{
 		$this->rootAction = $action;
 	}
@@ -335,7 +371,7 @@ abstract class AbstractAction
 	/**
 	 * Returns the pointer to the root action
 	 * 
-	 * @return \Gbili\Miner\Blueprint\Action\RootAction
+	 * @return \Gbili\Miner\Blueprint\Action\RootActionInterface
 	 */
 	public function getRoot()
 	{
@@ -371,7 +407,7 @@ abstract class AbstractAction
 	public function executionSucceed()
 	{
 	    if (!$this->isExecuted()) {
-	        throw new Exception('You must execute before checking this');
+	        throw new Exception('You must execute before checking this, action Id: ' . $this->getId());
 	    }
 	    return $this->executionSucceed;
 	}
@@ -483,8 +519,19 @@ abstract class AbstractAction
 	 * @return boolean
 	 */
 	public function hasMoreResults()
-	{
-	    return $this->isExecuted() && $this->innerHasMoreResults();
+    {   
+        $isExecuted = $this->isExecuted();
+        $innerHasMoreResults = $this->innerHasMoreResults();
+
+        $this->getEventManager()->trigger(
+            'hasMoreResults',
+            $this,
+            [
+                'isExecuted' => $isExecuted,
+                'hasMoreResults' => $innerHasMoreResults,
+            ]
+        );
+        return $isExecuted && $innerHasMoreResults;
 	}
 	
 	/**
@@ -516,9 +563,26 @@ abstract class AbstractAction
 	 */
 	final public function execute()
 	{
+        $this->getEventManager()->trigger(
+            __FUNCTION__ . '.pre',
+            $this,
+            array('identifiers' => $this->getEventManager()->getIdentifiers())
+        );
+
 		$ret = $this->innerExecute();
 		$this->executionSucceed = $ret;
-		$this->postExecute();
+
+        $this->getEventManager()->trigger(
+            __FUNCTION__ . '.post',
+            $this,
+            array('status' => $ret)
+        );
+		// Make sure lastInput was set by subclass
+		// after execution
+		if ($this->executionSucceed() && null === $this->lastInput) {
+		    throw new Exception("Subclasses should keep track of lastInput by setting it after execution");
+		}
+
 		return $this->executionSucceed();
 	}
 	
@@ -531,19 +595,6 @@ abstract class AbstractAction
 	    return ($this->getParent() instanceof Extract 
     	      && $this->hasInputGroup()
     	      && !$this->getParent()->hasGroup($this->getInputGroup()));
-	}
-	
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	protected function postExecute()
-	{
-		// Make sure lastInput was set by subclass
-		// after execution
-		if ($this->executionSucceed() && null === $this->lastInput) {
-		    throw new Exception("Subclasses should keep track of lastInput by setting it after execution");
-		}
 	}
 	
 	/**
@@ -560,8 +611,14 @@ abstract class AbstractAction
 			throw new Exception('You cannot clear the instance it has not been executed already call execute().');
 		}
 		$this->executionSucceed = null;
-		
-		$this->innerClear();
+
+        $this->innerClear();
+        //Allow callbacks and stuff to rewind the loop and stuff
+        $this->getEventManager()->trigger(
+            __FUNCTION__, //event identifier
+            $this,
+            []
+        );
 		
 		if (!$this->getChildrenCollection()->isEmpty()) {
     		$this->getChildrenCollection()->rewind();
@@ -578,14 +635,14 @@ abstract class AbstractAction
 	 * 
 	 * @return unknown_type
 	 */
-	public function clearMeAndOffspring($thisFull = true)
+	public function clearMeAndOffspring()
 	{
 		if ($this->hasChildren()) {
 			foreach ($this->getChildren() as $child) {
 				$child->clearMeAndOffspring();
 			}
 		}
-		return (true === $thisFull)? $this->fullClear() : $this->clear();
+		return $this->clear();
 	}
 	
 	public function toString()
@@ -612,8 +669,7 @@ abstract class AbstractAction
     {
         $this->hydrationInfo = $info;
         $this->setId($info['actionId']);
-        //Only set parent when not root
-        if (isset($info['parentId']) && $this->getBlueprint()->hasAction($info['parentId']) && $info['parentId'] !== $info['actionId']) {
+        if (isset($info['parentId']) && $this->getBlueprint()->hasAction($info['parentId']) && !($isRoot = ($info['parentId'] === $info['actionId']))) {
             $parent = $this->getBlueprint()->getAction($info['parentId']);
             $parent->addChild($this);
         }

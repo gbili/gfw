@@ -1,0 +1,153 @@
+<?php
+namespace Gbili\Tests\Miner\Application;
+
+
+class ArrayApplicationTest extends \Gbili\Tests\GbiliTestCase
+{
+    static public $counter;
+
+    protected function getPDO()
+    {
+        $dSN = "mysql:host=127.0.0.1;dbname=miner";
+        $mysqlUser = 'g';
+        return new \PDO($dSN, $mysqlUser, 'mysql', array(\PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"));
+    }
+
+    protected function initDbReq()
+    {
+        \Gbili\Db\Req\AbstractReq::setAdapter($this->getPDO());
+        \Gbili\Db\Registry::setReqClassNameGenerator(\Gbili\Db\Registry::getDefaultReqClassNameGenerator());
+    }
+
+    protected function installDbTables()
+    {
+        $this->installer = new \Gbili\Miner\Installer;
+        $this->installer->setTableSchemaPath(__DIR__ . '/../../../../../boot/conf/db/tables_dumperengine.sql');
+        $this->installer->deleteExisting(true);
+        $this->installer->install();
+    }
+
+    protected function initApp()
+    {
+        $this->rootActionId = 'retrieve website contents';
+        $this->rootFirstChildId = 'get website title';
+        $this->rootSecondChildId = 'get website links';
+        $this->rootSecondChildsFirstChildId = 'get inner pages contents';
+
+        $execCounter = 0;
+
+        $config = array(
+            'blueprint_type'              => 'array',
+            'host'                        => 'shopstarbuzz.com',
+            'exect_time_limit'            => 86400,
+            'execution_allowed_fails_max_count' => 2,
+            'persistance_allowed_fails_max_count' => 1,
+            'unpersisted_instances_max_count' => 1,
+            'results_per_action_count'    => 5,
+            'limited_results_action_id'   => $this->rootSecondChildId, //After 5 pages of category, Switch to next cateogry
+            'delay_min'                   => 10,
+            'delay_max'                   => 15,
+            'service_manager' => array(
+                'invokables' => array(
+                    'PersistableInstance' => '\StdClass',
+                    'Lexer'           => '\Gbili\Tests\Miner\SomeLexer',
+                 ),
+                 'factories' => array(
+                    'DumpActionId' => function ($sm) use ($execCounter) { 
+                        return new \Zend\Stdlib\CallbackHandler(function($e) use ($execCounter) { 
+                            echo '-----' . \Gbili\Tests\Miner\Application\ArrayApplicationTest::$counter++ . '---' . PHP_EOL;
+                            echo 'Name: ' . PHP_EOL;
+                            var_dump($e->getName());
+                            echo 'Id: ' . PHP_EOL;
+                            var_dump($e->getTarget()->getId());
+                            echo 'Params: ' . PHP_EOL;
+                            var_dump($e->getParams());
+                            echo 'Target: ' . PHP_EOL;
+                            var_dump(get_class($e->getTarget()));
+                            echo '- - - - - -' . PHP_EOL;
+                        });
+                    },
+                ),
+            ),
+            'contents_fetcher_aggregate' => array(
+                'queue' => array(
+                    10 => array(
+                        new \Gbili\Tests\Miner\Blueprint\Action\GetContents\Contents\MockContentsFetcherWebPage,
+                        new \Gbili\Tests\Miner\Blueprint\Action\GetContents\Contents\MockContentsFetcherLink,
+                    ),
+                ),
+            ),
+            'action_set' => array(
+                $this->rootActionId => array(
+                    'type' => 'GetContents',
+                    'data' => 'http://somedomain.com',
+                    'description' => 'retrieve the website contents from the web',
+                ),
+                $this->rootFirstChildId => array(
+                    'parent' => $this->rootActionId,
+                    'type' => 'Extract',
+                    'data' => '<title>(?P<title>[^<]+)</title>',
+                    'spit_group' => array('title'),
+                    'description' => 'get the title',
+                ),
+                $this->rootSecondChildId => array(
+                    'parent' => $this->rootActionId,
+                    'type' => 'Extract',
+                    'match_all' => true,
+                    'data' => '<a.+?href="(?P<link>[^"]+)"',
+                    'spit_group' => array('link'),
+                ),
+                $this->rootSecondChildsFirstChildId => array(
+                    'type' => 'GetContents',
+                    'new_instance_generating_point' => true,
+                    'parent' => $this->rootSecondChildId,
+                    'input_group' => 'link',
+                ),
+            ),
+            'listeners' => array(
+                /*'application' => array(
+                    array('manageFail.normalAction', 'DumpActionId', 100),
+                    array('executeAction.success', 'ActionSuccess', 100),
+                ),*/
+                //@TODO make sure these listeners get hooked to the right actions
+                //either through shared event manager or with some id checking etc.
+                array($this->rootActionId, 'execute.post', 'DumpActionId', 2),
+                array($this->rootActionId, 'hasMoreResults', 'DumpActionId', 2),
+                array($this->rootActionId, 'executeInput', 'DumpActionId', 2),
+                array($this->rootFirstChildId, 'execute.post', 'DumpActionId', 2),
+                array($this->rootFirstChildId, 'hasMoreResults', 'DumpActionId', 2),
+                array($this->rootFirstChildId, 'executeInput', 'DumpActionId', 2),
+                array($this->rootSecondChildId, 'execute.post', 'DumpActionId', 3),
+                array($this->rootSecondChildId, 'hasMoreResults', 'DumpActionId', 3),
+                array($this->rootSecondChildId, 'executeInput', 'DumpActionId', 3),
+                array($this->rootSecondChildsFirstChildId, 'execute.post', 'DumpActionId', 2),
+                array($this->rootSecondChildsFirstChildId, 'hasMoreResults', 'DumpActionId', 2),
+                array($this->rootSecondChildsFirstChildId, 'executeInput', 'DumpActionId', 2),
+            ),
+        );
+        $this->app = \Gbili\Miner\Application\Application::init($config);
+    }
+
+    /**
+     * Sets up the fixture, for exaple, open a network connection
+     * This method is called before a test is executed
+     *
+     * @return void
+     */
+    public function setUp()
+    {
+        $this->initDbReq();
+        $this->installDbTables();
+        $this->initApp();
+    }
+
+    public function testAppInitReturnsAppInstance()
+    {
+        $this->assertEquals($this->app instanceof \Gbili\Miner\Application\Application, true);
+    }
+
+    public function testAppCanBeRun()
+    {
+        $this->app->run();
+    }
+}

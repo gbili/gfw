@@ -1,10 +1,11 @@
 <?php
 namespace Gbili\Miner\Blueprint\Action\GetContents;
 
-use Gbili\Miner\Blueprint\Action\RootAction;
 use Gbili\Miner\Blueprint\Action\GetContents;
 
-class RootGetContents extends GetContents implements RootAction
+class RootGetContents 
+extends GetContents 
+implements \Gbili\Miner\Blueprint\Action\RootActionInterface
 {
     /**
      * Contains the input data when the action

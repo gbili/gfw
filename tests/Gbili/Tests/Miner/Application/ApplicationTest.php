@@ -28,6 +28,7 @@ class ApplicationTest extends \Gbili\Tests\GbiliTestCase
     protected function initApp()
     {
         $config = array(
+            'blueprint_type'              => 'db_req',
             'host'                        => 'shopstarbuzz.com',
             'exect_time_limit'            => 86400,
             'execution_allowed_fails_max_count' => 2,

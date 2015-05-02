@@ -8,14 +8,14 @@ use Zend\Stdlib\CallbackHandler;
 use Zend\EventManager\EventManagerAwareTrait;
 use Zend\EventManager\EventManagerAwareInterface;
 
-use Gbili\Miner\AttachableListenersInterface;
+use Gbili\Miner\HasAttachableListenersInterface;
 
 /**
  * 
  * @author g
  *
  */
-class Application implements EventManagerAwareInterface, AttachableListenersInterface
+class Application implements EventManagerAwareInterface, HasAttachableListenersInterface
 {
     use EventManagerAwareTrait;
     
@@ -67,20 +67,21 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
     public static function init($configuration = array())
     {
         $smConfig       = isset($configuration['service_manager']) ? $configuration['service_manager'] : array();
-        $listeners      = isset($configuration['listeners']) ? $configuration['listeners'] : array();
+        $appListeners      = isset($configuration['application']['listeners']) ? $configuration['application']['listeners'] : array();
         $serviceManager = new ServiceManager(new ServiceManagerConfig($smConfig));
         $serviceManager->setService('ApplicationConfig', $configuration);
         
         // By calling engine and flow handler we make all services available
 
-        $application = $serviceManager->get('Application')->addListeners($listeners);
+        $application = $serviceManager->get('Application');
+        $application->addListeners($appListeners);
         //$serviceManager->get('Persistance');
         
         // Then we can easily attach all listeners without fearing circular
         // dependencies
         
         //The ListenersAttacher has attachables from a ServiceManagerConfig initializer
-        //If any retrieved service implements AttachableListenersInterface, the initializer
+        //If any retrieved service implements HasAttachableListenersInterface, the initializer
         //will call ListenersAttacher::regsiterAttachable($myService) 
         //Every regsiteredAttachable will be used to call ListenersAttacher::attachListenersToAttachable($myService) 
         //Then we retrieve all the listeners from every myService, and attach them to the service's event manager
@@ -108,7 +109,9 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
 	 */
 	public function addListeners($listeners = array())
 	{
-	    $this->defaultListeners = array_unique(array_merge($this->defaultListeners, $listeners));
+        if (!empty($listeners)) {
+            $this->defaultListeners = array_merge($this->defaultListeners, $listeners);
+        }
 	    return $this;
 	}
     
@@ -129,7 +132,8 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
     {
         do {
             $this->executeAction();
-        } while ($this->flowEvaluator->evaluate() || $this->manageFail());
+        } while ($this->flowEvaluator->evaluate() || $this->manageFail()); //@TODO what about when reached ed of actionset?
+        echo 'No fail happened, end of script';
     }
     
     /**
@@ -185,7 +189,7 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
     public function manageFail()
     {
         $responses = $this->triggerEvent(__FUNCTION__ . '.normalAction');
-        return !$responses->stopped() && $this->flowEvaluator->attemptFailRecovery();
+        return !$responses->stopped() && $this->flowEvaluator->attemptResume();
     }
     
     /**

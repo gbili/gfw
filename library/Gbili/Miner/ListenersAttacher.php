@@ -11,7 +11,7 @@ namespace Gbili\Miner;
  * @author g
  *
  */
-class ListenersAttacher
+class ListenersAttacher implements \Zend\ServiceManager\ServiceManagerAwareInterface
 {
     /**
      * Objects having listeners wanting to attach to them
@@ -25,22 +25,27 @@ class ListenersAttacher
      * From where to retrieve the listeners
      * @var \Zend\ServiceManager\ServiceLocatorInterface
      */
-    protected $serviceManager = null;
+    protected $serviceManager;
 
-    /**
-     * 
-     * @param \Zend\ServiceManager\ServiceLocatorInterface $sm
-     */
-    public function __construct(\Zend\ServiceManager\ServiceLocatorInterface $sm)
+    public function getServiceManager()
+    {
+        if (null === $this->serviceManager) {
+            throw new \Exception('Missing service manager');
+        }
+        return $this->serviceManager;
+    }
+
+    public function setServiceManager(\Zend\ServiceManager\ServiceManager $sm)
     {
         $this->serviceManager = $sm;
+        return $this;
     }
 
     /**
      * 
      * @param AttachableListenerInterface $al
      */
-    public function registerAttachable(AttachableListenersInterface $al)
+    public function registerAttachable(HasAttachableListenersInterface $al)
     {
         if (!$al instanceof \Zend\EventManager\EventManagerAwareInterface) {
             throw new Exception('registered instance having attachable listeners, must be an instanceof EventManagerAwareInterface');
@@ -77,13 +82,12 @@ class ListenersAttacher
      * 
      * @param unknown_type $attachable
      */
-    public function attachListenersToAttachable(AttachableListenersInterface $attachable)
+    public function attachListenersToAttachable(HasAttachableListenersInterface $attachable)
     {
-        $events    = $attachable->getEventManager();
-        $identifiers = $events->getIdentifiers();
-        $listeners = array_unique($attachable->getListeners());
-        foreach ($listeners as $listener) {
-            $events->attach($this->serviceManager->get($listener));
+        $events = $attachable->getEventManager();
+        $listenersAsAggregates = array_filter($attachable->getListeners(), function ($value) { return is_string($value); });
+        foreach (array_unique($listenersAsAggregates) as $listenerAggregateIdenfier) {
+            $events->attach($this->serviceManager->get($listenerAggregateIdenfier));
         }
     }
 }
