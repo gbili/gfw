@@ -1,7 +1,6 @@
 <?php
 namespace Gbili\Miner\Blueprint\Action;
 
-use Zend\EventManager\EventManagerAwareTrait;
 use Gbili\Stdlib\CircularCollection;
 use Gbili\Out\Out;
 
@@ -18,10 +17,18 @@ use Gbili\Out\Out;
  * @author gui
  *
  */
-abstract class AbstractAction implements \Gbili\Miner\EventManagerAwareSharedManagerExpectedInterface
+abstract class AbstractAction
+implements \Zend\EventManager\EventManagerAwareInterface
 {
+    use \Zend\EventManager\EventManagerAwareTrait;
+
 	const EXECUTION_SUCCESS = true;
 	const EXECUTION_FAIL    = false;
+
+    /**
+     * @var array used to identify the eventis in shared events
+     */
+    protected $eventIdentifier;
 
     /**
      * Needed in extract action for input group
@@ -140,12 +147,6 @@ abstract class AbstractAction implements \Gbili\Miner\EventManagerAwareSharedMan
 	 * @var unknown_type
 	 */
 	protected $actionInput;
-
-    /**
-     * @var \Zend\EventManager\EventManagerInterface
-     */
-    protected $events;
-
 	
 	/**
 	 * 
@@ -154,19 +155,6 @@ abstract class AbstractAction implements \Gbili\Miner\EventManagerAwareSharedMan
 	public function __construct()
 	{
 	}
-
-    public function setEventManager(\Zend\EventManager\EventManagerInterface $events)
-    {
-        $this->events = $events;
-    }
-
-    public function getEventManager()
-    {
-        if (!$this->events) {
-            $this->setEventManager(new \Zend\EventManager\EventManager());
-        }
-        return $this->events;
-    }
 
     /**
      * This is how listeners can attach to a specific action identified
@@ -178,13 +166,16 @@ abstract class AbstractAction implements \Gbili\Miner\EventManagerAwareSharedMan
         if (null === $this->id) {
             throw new \Exception('Make sure you set the id before calling this');
         }
-        $classnameParts = explode('\\', get_class($this));
-        $classname = end($classnameParts);
-        $this->getEventManager()->setIdentifiers([
-            implode('.', [$classname, $this->getId()]), //"Extract.some id with spaces ok"
+        $fullSubclass = get_class($this);
+        $subclassnameParts = explode('\\', $fullSubclass);
+        $subclassname = end($subclassnameParts);
+        $this->eventIdentifier = [
             $this->getId(), //"some id with spaces ok"
-            get_class($this), //\Gbili\Miner\Blueprint\Action\Extract
-        ]);
+            implode('.', [$subclassname, $this->getId()]), //"Extract.some id with spaces ok"
+            $fullSubclass, //\Gbili\Miner\Blueprint\Action\Extract
+            __CLASS__,
+        ];
+        $this->getEventManager()->setIdentifiers($this->eventIdentifier);
     }
 	
 	/**
@@ -523,14 +514,25 @@ abstract class AbstractAction implements \Gbili\Miner\EventManagerAwareSharedMan
         $isExecuted = $this->isExecuted();
         $innerHasMoreResults = $this->innerHasMoreResults();
 
-        $this->getEventManager()->trigger(
+        // Allow listeners to tell whether an action has more
+        // results or not... This can mess the execution flow
+        // if not handled properly down the road; like if you
+        // tell there are more results when there aren't and
+        // you don't provide the additional results by listeninig
+        // to getResult.
+        $responses = $this->getEventManager()->trigger(
             'hasMoreResults',
             $this,
             [
                 'isExecuted' => $isExecuted,
                 'hasMoreResults' => $innerHasMoreResults,
-            ]
+            ],
+            function ($listenerReturn) {return !$listenerReturn;} //Stop using results of this executed action
         );
+        if ($responses->stopped()) {
+            return $responses->last();
+        }
+
         return $isExecuted && $innerHasMoreResults;
 	}
 	

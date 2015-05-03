@@ -16,6 +16,8 @@ class FailListenerAggregate implements ListenerAggregateInterface
      * @var \Gbili\Miner\Lexer\AbstractLexer
      */
     protected $fail = null;
+
+    protected $listenerAggregateAttacher;
     
     /**
      * 
@@ -24,6 +26,7 @@ class FailListenerAggregate implements ListenerAggregateInterface
     public function __construct(Fail $fail)
     {
         $this->fail = $fail;
+        $this->listenerAggregateAttacher = new \Gbili\ListenerAggregateAttacher;
     }
     
     /**
@@ -32,18 +35,12 @@ class FailListenerAggregate implements ListenerAggregateInterface
      */
 	public function attach(EventManagerInterface $events)
 	{
-	    $eventAwareClassIdentifiers = $events->getIdentifiers();
-        $eventsAwareClass = end($eventAwareClassIdentifiers);
-        switch ($eventsAwareClass) {
-            case 'Gbili\Miner\Application\Application':
-        	    $this->listeners[] = $events->attach('executeAction.fail', array($this->fail, 'manageExecutionFail'));
-        	    break;
-            case 'Gbili\Miner\Persistance':
-        	    $this->listeners[] = $events->attach('persistInstance.fail', array($this->fail, 'managePersitanceFail'));
-                break;
-            default:
-                throw new Exception('EventManager not supported by:' . __CLASS__ . ' instance of :' . $eventsAwareClass . ' not expected');
-                break;
+        $listeners = [];
+        $listeners['Gbili\Miner\Application\Application'] = ['executeAction.fail', [$this->fail, 'manageExecutionFail']];
+        $listeners['Gbili\Miner\Persistance'] = ['persistInstance.fail', [$this->fail, 'managePersitanceFail']];
+
+        foreach ($this->listenerAggregateAttacher->attachListenersByEventsIdentifier($events, $listeners) as $listener) {
+            $this->listeners[] = $listener;
         }
 	}
 	

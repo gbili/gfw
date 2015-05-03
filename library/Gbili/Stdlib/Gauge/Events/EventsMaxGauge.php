@@ -28,7 +28,7 @@ class EventsMaxGauge extends EventsGauge
         }
         return parent::__construct($initialCount, $max);
     }
-    
+ 
     /**
      * (non-PHPdoc)
      * @see Gbili\Stdlib\Gauge.Gauge::onRemoveMax()

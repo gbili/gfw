@@ -157,17 +157,15 @@ class ServiceManagerConfig implements ConfigInterface
             $serviceManager->setShared($name, $value);
         }
 
-        /*$serviceManager->addInitializer(function ($instance) use ($serviceManager) {
+        $serviceManager->addInitializer(function ($instance) use ($serviceManager) {
             if ($instance instanceof EventManagerAwareInterface) {
                 if ($instance->getEventManager() instanceof EventManagerInterface) {
                     $instance->getEventManager()->setSharedManager(
                         $serviceManager->get('SharedEventManager')
                     );
-                } else {
-                    $instance->setEventManager($serviceManager->get('EventManager'));
                 }
             }
-        });*/
+        });
 
         $serviceManager->addInitializer(function ($instance) use ($serviceManager) {
             if ($instance instanceof ServiceManagerAwareInterface) {
@@ -187,11 +185,11 @@ class ServiceManagerConfig implements ConfigInterface
             }
         });
 
-        $serviceManager->addInitializer(function ($instance) use ($serviceManager) {
+        /*$serviceManager->addInitializer(function ($instance) use ($serviceManager) {
             if ($instance instanceof \Gbili\Miner\EventManagerAwareSharedManagerExpectedInterface) {
                 $instance->getEventManager()->setSharedManager($serviceManager->get('SharedEventManager'));
             }
-        });
+        });*/
 
         $serviceManager->addInitializer(function ($instance) use ($serviceManager) {
             if ($instance instanceof \Gbili\Miner\ContentsFetcherAggregateAwareInterface) {

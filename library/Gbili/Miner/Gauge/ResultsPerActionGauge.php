@@ -11,8 +11,8 @@ use Gbili\Miner\HasAttachableListenersInterface;
  */
 class ResultsPerActionGauge extends EventsMaxGauge implements HasAttachableListenersInterface
 {   
-    protected $defaultListeners = array(
-        'ApplicationListenerAggregate'
+    protected $defaultListeners = array( // events available : add.pre, add.post, reachedLimit
+//        'ApplicationListenerAggregate'
     );
     
     /**

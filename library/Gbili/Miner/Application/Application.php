@@ -1,23 +1,16 @@
 <?php
 namespace Gbili\Miner\Application;
 
-use Gbili\Miner\Service\ServiceManagerConfig;
-
-use Zend\ServiceManager\ServiceManager;
-use Zend\Stdlib\CallbackHandler;
-use Zend\EventManager\EventManagerAwareTrait;
-use Zend\EventManager\EventManagerAwareInterface;
-
-use Gbili\Miner\HasAttachableListenersInterface;
-
 /**
  * 
  * @author g
  *
  */
-class Application implements EventManagerAwareInterface, HasAttachableListenersInterface
+class Application 
+implements \Zend\EventManager\EventManagerAwareInterface,
+           \Gbili\Miner\HasAttachableListenersInterface
 {
-    use EventManagerAwareTrait;
+    use \Zend\EventManager\EventManagerAwareTrait;
     
     /**
      * 
@@ -28,6 +21,8 @@ class Application implements EventManagerAwareInterface, HasAttachableListenersI
         'ExecutionAllowedFailsGaugeListenerAggregate', //manageFail.normalAction
         'FailLoggerListenerAggregate', //executeAction.fail
     );
+
+    //TODO add a method that should handle gauge reachedLimit 
     
     /**
      * 
@@ -68,7 +63,7 @@ class Application implements EventManagerAwareInterface, HasAttachableListenersI
     {
         $smConfig       = isset($configuration['service_manager']) ? $configuration['service_manager'] : array();
         $appListeners      = isset($configuration['application']['listeners']) ? $configuration['application']['listeners'] : array();
-        $serviceManager = new ServiceManager(new ServiceManagerConfig($smConfig));
+        $serviceManager = new \Zend\ServiceManager\ServiceManager(new \Gbili\Miner\Service\ServiceManagerConfig($smConfig));
         $serviceManager->setService('ApplicationConfig', $configuration);
         
         // By calling engine and flow handler we make all services available
@@ -132,8 +127,11 @@ class Application implements EventManagerAwareInterface, HasAttachableListenersI
     {
         do {
             $this->executeAction();
-        } while ($this->flowEvaluator->evaluate() || $this->manageFail()); //@TODO what about when reached ed of actionset?
-        echo 'No fail happened, end of script';
+        } while (
+            ($foundExecutableAction = $this->flowEvaluator->evaluate()) 
+            || $this->manageNotFoundExecutableAction()
+        );
+        $this->triggerEvent('enOfScript');
     }
     
     /**
@@ -143,7 +141,7 @@ class Application implements EventManagerAwareInterface, HasAttachableListenersI
      *     If you want to monitor the number of normal
      *     actions that fail (not optional) and controll whether
      *     the the application should attempt to recover and 
-     *     continue, listen to manageFail.normalAction
+     *     continue, listen to manageNotFoundExecutableAction.normalAction
      * .post monitor all executed actions regardless of fail or success
      *     
      * @throws Exception
@@ -186,7 +184,7 @@ class Application implements EventManagerAwareInterface, HasAttachableListenersI
      * @throws Exception
      * @return true continue wile loop
      */
-    public function manageFail()
+    public function manageNotFoundExecutableAction()
     {
         $responses = $this->triggerEvent(__FUNCTION__ . '.normalAction');
         return !$responses->stopped() && $this->flowEvaluator->attemptResume();
