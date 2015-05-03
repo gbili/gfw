@@ -34,7 +34,12 @@ implements
 	 */
 	public function setUrl(\Gbili\Url\Url $url)
 	{
-		$this->setElement('url', $url);
+        if (!$this->isSetKey('url')) {
+            if ($this->getElement('url') !== $url) { // bug with || and && unexpected variable or call to undefined ()
+                return $this;
+            }
+        }
+        $this->setElement('url', $url);
 		return $this;
 	}
 	
