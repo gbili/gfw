@@ -94,10 +94,12 @@ class Thread implements EventManagerAwareInterface, HasAttachableListenersInterf
 	/**
 	 * 
 	 */
-	public function retakeFlowFromParent()
+	public function retakeFlowFromParent($clear=true)
 	{
         $action = $this->getAction();
-        $action->clear();
+        if ($clear) { //needed for testing
+            $action->clear();
+        }
         if ($action->isRoot()) {
 	        $this->getEventManager()->trigger(__FUNCTION__ . '.rootParentIsRoot', array('thread', $this));
         } else {

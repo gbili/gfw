@@ -14,7 +14,10 @@ class Collection extends ArrayIterator implements ToStringInterface
     }
     
     /**
-     * 
+     * Return the key element pair currently being pointed at, 
+     * and move the pointer to the next position 
+     * Return false if there are already no more elements 
+     * before even moving the pointer
      * @return boolean|multitype:Ambigous <\Gbili\Stdlib\mixed, boolean>
      */
     public function each()
@@ -28,7 +31,7 @@ class Collection extends ArrayIterator implements ToStringInterface
     }
     
     /**
-     * 
+     * Return the value at current pointer positoin
      * @throws Exception
      */
     public function getCurrent()
@@ -41,6 +44,7 @@ class Collection extends ArrayIterator implements ToStringInterface
     
     /**
      * Get a sample element in array
+     * Either the value at current position if valid or the first element
      * @return mixed
      */
     public function getSample()
@@ -50,10 +54,11 @@ class Collection extends ArrayIterator implements ToStringInterface
         }
         
         if ($this->valid()) {
-            return $this->current();
+            $this->getCurrent();
         }
-        $this->rewind();
-        return $this->getSample();
+        $cloned = clone $this;
+        $cloned->rewind();
+        return $cloned->getCurrent();
     }
     
     /**
@@ -64,6 +69,7 @@ class Collection extends ArrayIterator implements ToStringInterface
     {
         $this->next();
         if (!$this->valid()) {
+            $this->last(); //move to the last valid position avoid exception
             return false;
         }
         return $this->current();
@@ -75,6 +81,10 @@ class Collection extends ArrayIterator implements ToStringInterface
     public function last()
     {
         $this->seek(($this->isEmpty())? 0 : $this->count() - 1);
+        if (!$this->valid()) {
+            return false;
+        }
+        return $this->current();
     }
     
     /**
@@ -83,11 +93,20 @@ class Collection extends ArrayIterator implements ToStringInterface
      */
     public function getLast()
     {
-        $this->last();
-        if (!$this->valid()) {
+        return $this->last();
+    }
+    
+    /**
+     * 
+     * @return boolean|mixed
+     */
+    public function getFirst()
+    {
+        if ($this->isEmpty()) {
             return false;
         }
-        return $this->current();
+        $this->rewind();
+        return $this->getCurrent();
     }
     
     /**
@@ -133,14 +152,18 @@ class Collection extends ArrayIterator implements ToStringInterface
      * 
      * @param Collection $c
      */
-    public function push(Collection $c)
+    public function merge(Collection $c)
     {
-        foreach ($c as $e) {
+        $c->rewind();
+        while ($c->valid()) {
+            $k = $c->key();
+            $e = $c->current();
             $this->add($e);
+            $c->next();
         }
         return $this;
     }
-    
+
     /**
      * 
      * @param number $index
@@ -162,12 +185,21 @@ class Collection extends ArrayIterator implements ToStringInterface
     public function toString()
     {
         if ($this->isEmpty()) {
-            throw new Exception("There are no elements, to print an empty string just echo '';");
+            return '';
         }
         $thisArray = iterator_to_array($this, false);
         return array_reduce($thisArray, function ($str, $element) {
             return $str .= ($element instanceof ToStringInterface)? $element->toString() : (string) $element;
         }, '');
+    }
+
+    public function debugString()
+    {
+        $kvAsStrings = [];
+        foreach ($this as $k => $v) {
+            $kvAsStrings[] = '{'. $k . ':' . $v . '}';
+        }
+        return implode(", \n", $kvAsStrings);
     }
     
     /**

@@ -46,13 +46,6 @@ class Extract extends AbstractAction
 	private $groupToEntityArray;
 
 	/**
-	 * Tells if getResult() can be called
-	 * 
-	 * @var unknown_type
-	 */
-	private $isResultReady;
-
-	/**
 	 * 
 	 * @var unknown_type
 	 */
@@ -76,19 +69,6 @@ class Extract extends AbstractAction
 	 */
 	private $nextStep = null;
 	
-	/**
-	 * 
-	 * @param $regex is the regular expression needed to extract the content from the inputData
-	 * @param $useMatchAll
-	 * @param $groupNumToEntityArray
-	 * @param $nextActionInputDataGroupNumber
-	 * @return unknown_type
-	 */
-	public function __construct($useMatchAll = false)
-	{
-		parent::__construct();
-	}
-
     /**
      * @param $regexStr mixed:string|\Gbili\Regex\String\AbstractString
      * @return self
@@ -167,7 +147,7 @@ class Extract extends AbstractAction
 		if (!$this->hasFinalResults()) {
 			throw new Extract\Exception('This action has no final results, therefor it cannot spit, call hasFinalResults() before calling spit() to avoid exception.');
 		}
-	    $this->isResultReadyOrThrow();
+        $this->notExecutedBetterException();
 		return $this->getEntityToResultMap();
 	}
 	
@@ -178,7 +158,7 @@ class Extract extends AbstractAction
 	protected function getEntityToResultMap()
 	{
 	    $entityToResult = array();
-	    $results        = $this->getResults();
+	    $results        = $this->getResult();
 	    foreach ($this->groupToEntityArray as $k => $array) {
 	        if (isset($results[$array['regexGroup']]) && !empty($results[$array['regexGroup']])) {
 	            $entityToResult[$array['entity']] = $results[$array['regexGroup']];
@@ -198,7 +178,6 @@ class Extract extends AbstractAction
 	 * 		a. is MatchAll
 	 * 		b. is not MatchAll
 	 * @todo having a property interceptedResults, would avoid reinterception on every call to getResult, if that property existed, it should be set to null on every exec 
-	 * @note isResultReady replaces isExecuted
 	 * @return boolean
 	 */
 	protected function innerExecute()
@@ -207,59 +186,23 @@ class Extract extends AbstractAction
 	        return $this->manageMatchAllEarlierResults();
 	    }
 
-	    if ($this->parentIsExtractButDoesNotHaveTheInputGroupIAmReferringTo()) {
-            if (!$this->isOptional()) {
-                throw new \Exception(
-                    'Action ' . get_class($this) . ' : ' . $this->getTitle() . ' InputGroup: ' . print_r($this->getInputGroup(), true) . "\n"
-                    . 'Parent' . get_class($this->getParent()) . ': ' . $this->getParent()->getTitle() . "\n"
-                    . 'Referring to an input group: ' . var_export($this->getInputGroup()) .  ' that does not exist in extract parent resultset');
-            }
-            return false;
-	    }
-    	
-		$parentInput = $this->getInput();
+        $input = $this->getInputFromAction();
+        if ($input) {
+            $this->setRegex(new \Gbili\Regex\Regex($input, $this->regexStr));
+            $this->lastInput = $input;
+            
+            $this->regex->execute($this->useMatchAll);
+            return $this->regex->isValid();
+            //@todo after the regex is applied, a callback should be allowed to attempt to refactor the output
+        }
 
-        $this->getEventManager()->trigger(
-            'executeInput',
-            $this,
-            [
-                'input' => $parentInput,
-            ]
-        );
-
-		$this->setRegex(new \Gbili\Regex\Regex($parentInput, $this->regexStr));
-		$this->lastInput = $parentInput;
-		
-        $this->regex->execute($this->useMatchAll);
-		return $this->isResultReady = $this->regex->isValid();
-		//@todo after the regex is applied, a callback should be allowed to attempt to refactor the output
-	}
-
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	public function getInput()
-	{
-		if (!$this->knowsWhereToGetInputFrom()) {
-			throw new Exception('call setGroupForInputData($group), when the parentAction is an instance of Extract');
-    	}
-	    return $this->getParent()->getResult($this->getInputGroup());
-	}
-
-	/**
-	 * 
-	 * @return boolean
-	 */
-	protected function knowsWhereToGetInputFrom()
-	{
-	    return !($this->getParent() instanceof Extract && !$this->hasInputGroup());
+        return false;
 	}
 
 	/**
 	 * When when the extract instance has already been
 	 * executed, it _should be_ because it is using matchAll.
-	 * So when calling getResults, this instance will
+	 * So when calling getResult, this instance will
 	 * automatically return the next results of the matchAll
 	 * result set (that is, only clear() has been called)
 	 * 
@@ -270,19 +213,30 @@ class Extract extends AbstractAction
 	    if (!$this->useMatchAll) {
 	        throw new Extract\Exception('You are trying to execute the same action twice whereas it is not useMatchAll call clear()');
 	    }
-	    return $this->isResultReady = $this->regex->goToNextMatch();
+	    return $this->regex->goToNextMatch();
 	}
+
+    public function isExecutedOrThrow()
+    {
+        if (!$this->isExecuted()) {
+            if (null !== $this->regex && !$this->regex->isValid()) {
+                throw new Extract\Exception('Regex did not match a crap!');
+            }
+			throw new Extract\Exception('You must call execute() before getResult()');
+        }
+    }
 
 	/**	
 	 * 
 	 */
 	public function getResult($groupIdentifier = null)
 	{
-		if (null === $groupIdentifier) {
-			throw new Extract\Exception('The group number cannot be null (getResult() first param)');
-		}
+        $this->isExecutedOrThrow();
+        $results = $this->regex->getCurrentMatch();
 
-		$results = $this->getResults();
+		if (null === $groupIdentifier) {
+            return $results;
+		}
 		
         $responses = $this->getEventManager()->trigger(
             'interceptResult', //event identifier
@@ -293,9 +247,8 @@ class Extract extends AbstractAction
             ]
         );
 
-        $interceptedResults = $responses->last();
-        if (null !== $interceptedResults) {
-            $results = $interceptedResults;
+        if ($responses->stopped()) {
+            $results = $responses->last();
         }
 
 		if (!isset($results[$groupIdentifier])) {
@@ -316,39 +269,28 @@ class Extract extends AbstractAction
 	 */
 	public function hasGroup($groupIdentifier)
 	{
-	    $this->isResultReadyOrThrow();
+        $this->isExecutedOrThrow();
 		return $this->regex->hasGroup($groupIdentifier);
 	}
 
-    protected function isResultReadyOrThrow()
+    public function canGiveInputToAction(AbstractAction $action)
     {
-		if (false === $this->isResultReady) {
-            if (null !== $this->regex && !$this->regex->isValid()) {
-                throw new Extract\Exception('Regex did not match a crap!');
-            }
-			throw new Extract\Exception('You must call execute() before getResult()');
-		}
+        return $action->hasInputGroup() && $this->hasGroup($action->getInputGroup());
+    }
+
+    public function giveInputToAction(AbstractAction $action)
+    {
+        if (!$this->canGiveInputToAction($action)) {
+            throw new \Exception('To get input from Extract, you need to pass a group, and the Extract action must have that group');
+        }
+        return $this->getResult($action->getInputGroup());
     }
       
-
-	/**
-	 * Return all the results
-	 * 
-	 * @return unknown_type
-	 */
-	public function getResults()
-	{	
-        $this->isResultReadyOrThrow();
-		//return all groups of current match, if match all only get current match
-	    return $this->regex->getCurrentMatch();
-	}
-	
 	/**
 	 * 
 	 */
 	protected function innerClear()
 	{
-		$this->isResultReady = false;
 		$this->setRegex(null);
 	}
 	

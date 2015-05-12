@@ -14,7 +14,11 @@ class CircularCollection extends Collection
     protected $firstElementHasBeenNexted = false;
     
     /**
-     * 
+     * How many times the circular collection reached
+     * end.
+     * So when going through elements of the colleciton
+     * for the first time, it has never reached end,
+     * that is why the lap number will be 0
      * @var number
      */
     protected $lap = 0;
@@ -96,8 +100,8 @@ class CircularCollection extends Collection
         if ($this->isEmpty()) {
             throw new Exception('Cannot advance lap on an empty collection');
         }
-        $lapBeforeRewind                 = $this->lap;
-        $this->lastCallToGetNextChangedLap     = true;
+        $lapBeforeRewind = $this->lap;
+        $this->lastCallToGetNextChangedLap = true;
         $this->rewind();
         return $this->lap = ++$lapBeforeRewind;
     }

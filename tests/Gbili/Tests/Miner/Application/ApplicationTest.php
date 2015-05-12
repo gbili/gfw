@@ -28,14 +28,22 @@ class ApplicationTest extends \Gbili\Tests\GbiliTestCase
     protected function initApp()
     {
         $config = array(
+            'contents_fetcher_aggregate' => array(
+                'queue' => array(
+                    10 => array(
+                        new \Gbili\Tests\Miner\Blueprint\Action\GetContents\Contents\MockContentsFetcherWebPage,
+                        new \Gbili\Tests\Miner\Blueprint\Action\GetContents\Contents\MockContentsFetcherLink,
+                    ),
+                ),
+            ),
             'blueprint_type'              => 'db_req',
-            'host'                        => 'shopstarbuzz.com',
+            'host'                        => 'http://somedomain.com',
             'exect_time_limit'            => 86400,
             'execution_allowed_fails_max_count' => 2,
             'persistance_allowed_fails_max_count' => 1,
             'unpersisted_instances_max_count' => 1,
             'results_per_action_count'    => 5,
-            'limited_results_action_id'   => 6, //After 5 pages of category, Switch to next cateogry
+            'limited_results_action_id'   => $this->rootSecondChildId, //After 5 pages of category, Switch to next cateogry
             'delay_min'                   => 10,
             'delay_max'                   => 15,
             'service_manager' => array(
@@ -50,97 +58,27 @@ class ApplicationTest extends \Gbili\Tests\GbiliTestCase
 
     protected function installActionSet()
     {
-        $a = new \Gbili\Miner\Blueprint\Savable\Wrapper('shopstarbuzz.com');
+        $a = new \Gbili\Miner\Blueprint\Savable\Wrapper('http://somedomain.com');
         $a->createChildGetContents()
-            ->setTitle('1.1. Go to products page')
-            ->setData('http://www.shopstarbuzz.com/starbuzz/?sort=featured&page=1');
+            ->setTitle($this->rootActionId)
+            ->setData('http://somedomain.com');
 
         $a->createChildExtract()
-            ->setTitle('2.1. Extract products list from page')
+            ->setTitle($this->rootFirstChildId)
             ->setUseMatchAll(false)
-            ->setData('<ul class="ProductList[^>]+?>.+?</ul>');
+            ->setData('#<title>(?P<title>[^<]+)</title>#ig')
+            ->spitGroupAsEntity('title', 'TITLE');
 
-        $a->createChildExtract()
-            ->setTitle('Get each product list item')
+        $some = $a->createBrotherExtract() //$some is not necessary
+            ->setTitle($this->rootSecondChildId)
             ->setUseMatchAll(true)
-            ->setData('<li class=".+?</li>');
+            ->setData('#<a.+?href="(?P<link>[^"]+)"#ig')
+            ->spitGroupAsEntity('link', 'LINK');
 
-        $a->createChildExtract()
-            ->setTitle('extract each product thumbnail')
-            ->setUseMatchAll(false)
-            ->spitGroupAsEntity('tumbnailAlt', 'IMG_THUMB_ALT')
-            ->spitGroupAsEntity('tumbnailSrc', 'IMG_THUMB_SRC')
-            ->setAsNewInstanceGeneratingPoint()
-            ->setData('<img src="(?P<thumbnailSrc>[^"]+?)" alt="(?P<thumbnailAlt>[^"]+?)"');
-
-        $a->createBrotherExtract()
-            ->setTitle('extract each product details url and name')
-            ->setUseMatchAll(false)
-            ->spitGroupAsEntity('name', 'NAME')
-            ->spitGroupAsEntity('productUrl', 'URL')
-            ->setData('<div class="ProductDetails">[^<]+?<strong><a href="(?P<productUrl>[^"]+?)" class="">(?P<name>[^<]+)</a></strong>');
-
-        $prodAction = $a->createChildGetContents()
-            ->setTitle('2 Go to produtct  page')
-            ->setInputParentRegexGroup('productUrl');
-
-        // Product images
-        $a->createChildExtract($prodAction)
-            ->setTitle('2.1 extract product images section')
-            ->setUseMatchAll(false)
-            ->setData('<div class="ProductThumbImage" style="[^"]+?">.+?</div>');
-
-        $a->createChildExtract()
-            ->setTitle('2.1.1 extract big image src')
-            ->setUseMatchAll(false)
-            ->spitGroupAsEntity('productImgBigSrc', 'IMG_BIG_SRC')
-            ->setData('href="(?P<productImgBigSrc>.+?)\\?c=2"');
-
-        $a->createBrotherExtract()
-            ->setTitle('2.1.2 extract image alt')
-            ->setUseMatchAll(false)
-            ->spitGroupAsEntity('productImgAlt', 'IMG_ALT')
-            ->setData('alt="(?P<productImgAlt>[^"]+?)"');
-
-        $a->createBrotherExtract()
-            ->setTitle('2.1.3 extract medium image src')
-            ->setUseMatchAll(false)
-            ->spitGroupAsEntity('productImgMedSrc', 'IMG_MED_SRC')
-            ->setData('src="(?P<productImgMedSrc>[^"]+?)\\?c=2"');
-
-        $a->createChildExtract($prodAction)
-            ->setTitle('2.2 extract product title')
-            ->setUseMatchAll(false)
-            ->spitGroupAsEntity('productTitle', 'TITLE')
-            ->setData('<h1>(?P<productTitle>[^<]+?)</h1>');
-
-        $a->createBrotherExtract()
-            ->setTitle('2.3 extract product price')
-            ->setUseMatchAll(false)
-            ->spitGroupAsEntity('productPrice',  'PRICE')
-            ->setData('<em class="ProductPrice VariationProductPrice">(?P<productPrice>[^<]+?)</em>');
-
-        /*
-        $a->createBrotherExtract()
-            ->setTitle('2.4 extract product weight')
-            ->setUseMatchAll(false)
-            ->spitGroupAsEntity('productWeight', 'WEIGHT')
-            ->spitGroupAsEntity('productWeightUnit', Lexer::MODEL_NAME)
-            ->setData('<span class="VariationProductWeight">[^0-9]+?(?P<productWeight>\\S+?)\\s(?P<productWeightUnit>[A-Z]+?)[^<]+?</span>');
-        */
-
-        $a->createBrotherExtract()
-            ->setTitle('2.5 extract product selected price weight')
-            ->setUseMatchAll(false)
-            ->spitGroupAsEntity('productSelectedWeight', 'WEIGHT')
-            ->spitGroupAsEntity('productSelectedWeightUnit', 'WEIGHT_UNIT')
-            ->setData('<input[^a-z]+?type="radio".+?checked="checked"[^>]+?>[^<]+?<span [^>]+?>(?P<productSelectedWeight>[0-9]+?)(?P<productSelectedWeightUnit>[a-z]+?)</span>');
-
-        $a->createBrotherExtract()
-            ->setTitle('2.6 extract product description')
-            ->setUseMatchAll(false)
-            ->spitGroupAsEntity('productDescription', 'DESCRIPTION')
-        ->setData('<div class="ProductDescriptionContainer prodAccordionContent">[^<]+?<p><span style="font-size: small;">(?P<productDescrption>[^<]+?)</span></p>[^<]+?</div>');
+        $a->createChildGetContents($some) //$some is not necessary
+            ->setTitle($this->rootSecondChildsFirstChildId)
+            ->setInputParentRegexGroup('link')
+            ->setAsNewInstanceGeneratingPoint();
 
         $a->save();
     }
@@ -153,6 +91,11 @@ class ApplicationTest extends \Gbili\Tests\GbiliTestCase
      */
     public function setUp()
     {
+        $this->rootActionId = 'retrieve website contents';
+        $this->rootFirstChildId = 'get website title';
+        $this->rootSecondChildId = 'get website links';
+        $this->rootSecondChildsFirstChildId = 'get inner pages contents';
+
         $this->initDbReq();
         $this->installDbTables();
         $this->installActionSet();

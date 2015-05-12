@@ -1,5 +1,5 @@
 <?php
-namespace Gbili\Miner\Blueprint\Action;
+namespace Gbili\Miner\Blueprint\Action\GetContents;
 
 /**
  * This will contain an object representation of
@@ -14,36 +14,13 @@ namespace Gbili\Miner\Blueprint\Action;
  * @author gui
  *
  */
-abstract class AbstractAction
-implements \Zend\EventManager\EventManagerAwareInterface
+class InputGetter 
 {
-    use \Zend\EventManager\EventManagerAwareTrait;
-
-	const EXECUTION_SUCCESS = true;
-	const EXECUTION_FAIL    = false;
-
-    /**
-     * @var array used to identify the eventis in shared events
-     */
-    protected $eventIdentifier;
-
-    /**
-     * Needed in extract action for input group
-     * @var array
-     */
-    protected $hydrationInfo;
-
 	/**
 	 * 
 	 * @var integer 
 	 */
 	private $id;
-	
-	/**
-	 * 
-	 * @var \Gbili\Miner\BlueprintInterface
-	 */
-	private $blueprint;
 	
 	/**
 	 * Lets the Miner_Persistance_Persistance know whether
@@ -273,36 +250,6 @@ implements \Zend\EventManager\EventManagerAwareInterface
     public function hasInputGroup()
     {
         return $this->getInputGroup() !== null;
-    }
-
-    /**
-     * Try to get input from action
-     *
-     * @var 
-     */
-    public function getInputFromAction()
-    {
-	    if (!$this->getInputAction()->canGiveInputToAction($this)) {
-            if (!$this->isOptional()) {
-                throw new \Exception(
-                    'Action ' . get_class($this) . ' : ' . $this->getTitle() . ' InputGroup: ' . print_r($this->getInputGroup(), true) . "\n"
-                    . 'Parent' . get_class($this->getParent()) . ': ' . $this->getParent()->getTitle() . "\n"
-                    . 'Referring to an input group: ' . var_export($this->getInputGroup()) .  ' that does not exist in extract parent resultset');
-            }
-            return false;
-	    }
-    	
-		$input = $this->getInput();
-
-        $this->getEventManager()->trigger(
-            'executeInput',
-            $this,
-            [
-                'input' => $input,
-            ]
-        );
-
-        return $input;
     }
 	
 	/**
@@ -546,7 +493,6 @@ implements \Zend\EventManager\EventManagerAwareInterface
             ],
             function ($listenerReturn) {return !$listenerReturn;} //Stop using results of this executed action
         );
-
         if ($responses->stopped()) {
             return $responses->last();
         }
@@ -572,49 +518,9 @@ implements \Zend\EventManager\EventManagerAwareInterface
 	abstract protected function innerExecute();
 	
 	/**
-	 * The input can come from three different places
-	 * -other action than parent
-	 * -lastInput (in case there is a cw) : $lastInput 
-	 * -parent : $inputGroup
 	 * 
-	 * The normal action flow is that the roots gets input from bostrapInputData
-	 * then it executes, and the result is made available for the children
-	 * Then the child executes and so on.
-	 * However there may be cases, where some action will need to take
-	 * input from a child action so it can create more results. That's when
-	 * the flow changes for some loops, until the child cannot generate more
-	 * results. :/
-	 * 
-	 * @return unknown\type
 	 */
-	public function getInput()
-	{
-        $responses = $this->getEventManager()->trigger(
-            'input', //event identifier
-            $this,
-            ['lastInput' => $this->lastInput],
-            function ($listenerReturn) {return is_string($listenerReturn);} //Meets our expected result, will setStopped
-        );
-        if ($responses->stopped()) {
-            return $responses->last();
-        }
-
-        //Input from action
-        $input = $this->getInputAction()->giveInputToAction($this);
-
-        //Allow other input action refactoring
-        $responses = $this->getEventManager()->trigger(
-            'inputFromAction', //event identifier
-            $this, //targed
-            ['input' => $input], // params
-            function ($listenerReturn) {return is_string($listenerReturn);} //Meets our expected result, will setStopped
-        );
-        if ($responses->stopped()) {
-            $input = $responses->last();
-        }
-
-		return $input;
-	}
+	abstract public function getInput();
 	
 	/**
 	 * 
@@ -629,12 +535,13 @@ implements \Zend\EventManager\EventManagerAwareInterface
             array('identifiers' => $this->getEventManager()->getIdentifiers())
         );
 
-		$this->executionSucceed = $this->innerExecute();
+		$ret = $this->innerExecute();
+		$this->executionSucceed = $ret;
 
         $this->getEventManager()->trigger(
             __FUNCTION__ . '.post',
             $this,
-            array('status' => $this->executionSucceed)
+            array('status' => $ret)
         );
 		// Make sure lastInput was set by subclass
 		// after execution
@@ -644,9 +551,17 @@ implements \Zend\EventManager\EventManagerAwareInterface
 
 		return $this->executionSucceed();
 	}
-
-    abstract public function canGiveInputToAction(AbstractAction $action);
-    abstract public function giveInputToAction(AbstractAction $action);
+	
+	/**
+	 * 
+	 * @return boolean
+	 */
+	protected function parentIsExtractButDoesNotHaveTheInputGroupIAmReferringTo()
+	{
+	    return ($this->getParent() instanceof Extract 
+    	      && $this->hasInputGroup()
+    	      && !$this->getParent()->hasGroup($this->getInputGroup()));
+	}
 	
 	/**
 	 * Clear will empty $results so new info is considered
@@ -678,12 +593,6 @@ implements \Zend\EventManager\EventManagerAwareInterface
 	
 	/**
 	 * 
-	 * @return \Gbili\Miner\ExecutionStep\AbstractExecutionStep
-	 */
-	abstract protected function innerClear();
-	
-	/**
-	 * 
 	 * @return unknown_type
 	 */
 	public function clearMeAndOffspring()
@@ -695,44 +604,4 @@ implements \Zend\EventManager\EventManagerAwareInterface
 		}
 		return $this->clear();
 	}
-	
-	public function toString()
-	{
-	    $optional = $this->isOptional()? "yes": "no";
-        $class = get_class($this);
-	    $str  = "Action Type : {$class}\n";
-	    $str .= "Id          : {$this->getId()}\n";
-	    $str .= "Title       : {$this->getTitle()}\n";
-	    $str .= "Optional    : $optional\n";
-	    $str .= "Input       : {$this->getInput()}\n";
-	    return $str;
-	}
-
-    public function getHydrationInfo()
-    {
-        return $this->hydrationInfo;
-    }
-
-    /**
-     * @param $info array
-     * @return void 
-     */
-    public function hydrate(array $info)
-    {
-        $this->hydrationInfo = $info;
-        $this->setId($info['actionId']);
-        if (isset($info['parentId']) && $this->getBlueprint()->hasAction($info['parentId']) && !($isRoot = ($info['parentId'] === $info['actionId']))) {
-            $parent = $this->getBlueprint()->getAction($info['parentId']);
-            $parent->addChild($this);
-        }
-        if (isset($info['title'])) {
-            $this->setTitle($info['title']);
-        }
-        if (isset($info['isOpt'])) {
-            $this->setAsOptional($info['isOpt']);
-        }
-        if (isset($info['isNewInstanceGeneratingPoint']) && $info['isNewInstanceGeneratingPoint']) {
-	        $this->setAsNewInstanceGeneratingPoint();
-        }
-    }
 }

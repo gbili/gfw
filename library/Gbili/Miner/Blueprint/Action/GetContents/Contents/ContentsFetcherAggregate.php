@@ -10,6 +10,7 @@ class ContentsFetcherAggregate
 implements ContentsFetcherAggregateInterface
 {
     use \Zend\EventManager\EventManagerAwareTrait;
+
     /**
      * @var string the actual content
      */
@@ -42,6 +43,7 @@ implements ContentsFetcherAggregateInterface
     {
         $content = false;
         foreach ($this->fetcherList->getIterator() as $fetcher) {
+            $iterated = true;
             if ($content = $fetcher->fetch($url)) {
                 $this->content = $content;
                 $this->usedFetcher = $fetcher;
@@ -97,9 +99,7 @@ implements ContentsFetcherAggregateInterface
      */
     public function addFetcher(\Gbili\Miner\Blueprint\Action\GetContents\Contents\ContentsFetcherInterface $fetcher, $priority=1)
     {
-        $alreadyListening = false;
-        if ($this->hasFetcher($fetcher)) {
-            $alreadyListening = true;
+        if ($alreadyListening = $this->hasFetcher($fetcher)) {
             $this->fetcherList->remove($fetcher);
         }
         $this->fetcherList->insert($fetcher, $priority);
@@ -107,7 +107,6 @@ implements ContentsFetcherAggregateInterface
         if (!$alreadyListening && ($fetcher instanceof \Gbili\EventManager\AttachToEventManagerInterface)) {
             $fetcher->attachToEventManager($this->getEventManager());
         }
-
         return $this;
     }
 

@@ -72,9 +72,12 @@ class Scriptalicious
         return $this->installMissing;
     }
 
+    /**
+     * Checks whether a scirpt src is reachable in the public dir
+     */
     public function scriptExists($src)
     {
-        if (!defined(PUBLIC_DIR)) {
+        if (!defined('PUBLIC_DIR')) {
             throw new \Exception('You must set a constant PUBLIC_DIR, with the directory where the files should be installed');
         }
         return file_exists(PUBLIC_DIR . $src);
@@ -135,8 +138,14 @@ class Scriptalicious
         return $this;
     }
 
+    public function hasScript($identifier)
+    {
+        return (boolean) $this->dependencyManager->hasIdentifier($identifier);
+    }
+
     /**
      * 
+     * @note dependencies are rendered
      */
     public function renderScriptAndDependencies($identifier)
     {
@@ -149,6 +158,7 @@ class Scriptalicious
     /**
      * Render render all the scripts contained in dependencyManager
      * in an ordered fashion
+     * @note dependencies are rendered
      * @return string
      */
     public function renderAll()
@@ -159,6 +169,7 @@ class Scriptalicious
     /**
      * Render render all the scripts contained in dependencyManager
      * that have not already been rendered in an ordered fashion
+     * @note dependencies are rendered
      * @return string
      */
     public function renderAllRest()
@@ -170,6 +181,7 @@ class Scriptalicious
 
     /**
      * Render render all the scripts in $identifiers in the same order
+     * @note no dependencies rendered
      * @param $identifiers array 
      * @return string
      */
@@ -185,6 +197,7 @@ class Scriptalicious
 
     /**
      * Render the single script identified by $identifier (no dependency resolution is made)
+     * @note no dependencies rendered
      * @param $identifier string
      * @return string
      */

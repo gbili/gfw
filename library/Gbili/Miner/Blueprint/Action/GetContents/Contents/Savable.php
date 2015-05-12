@@ -10,7 +10,7 @@ class Savable
 extends \Gbili\Savable\Savable
 implements 
     \Gbili\Miner\Blueprint\Action\GetContents\Contents\ContentsFetcherInterface,
-    \Gbili\EventManager\AttachToEventManagerInterface
+    \Gbili\EventManager\AttachToEventManagerInterface // this is used by fetcherAggregate
 {
     /**
      * @var \Zend\Stdlib\CallbackHandler
@@ -34,8 +34,8 @@ implements
 	 */
 	public function setUrl(\Gbili\Url\Url $url)
 	{
-        if (!$this->isSetKey('url')) {
-            if ($this->getElement('url') !== $url) { // bug with || and && unexpected variable or call to undefined ()
+        if ($this->isSetKey('url')) {
+            if ($this->getElement('url') === $url) { // bug with || and && unexpected variable or call to undefined ()
                 return $this;
             }
         }

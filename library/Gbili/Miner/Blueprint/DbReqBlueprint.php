@@ -157,6 +157,7 @@ implements BlueprintInterface
 	{
         $action = $this->getNewAction($row);
 	    $action->setBlueprint($this);
+        $row['actionId'] = $row['title'];
         $action->hydrate($row);
         return $action;
 	}

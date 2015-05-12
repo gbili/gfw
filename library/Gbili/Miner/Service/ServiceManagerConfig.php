@@ -160,9 +160,10 @@ class ServiceManagerConfig implements ConfigInterface
         $serviceManager->addInitializer(function ($instance) use ($serviceManager) {
             if ($instance instanceof EventManagerAwareInterface) {
                 if ($instance->getEventManager() instanceof EventManagerInterface) {
-                    $instance->getEventManager()->setSharedManager(
-                        $serviceManager->get('SharedEventManager')
-                    );
+                    $em = $instance->getEventManager();
+                    $classParts = explode('\\', get_class($instance));
+                    $em->addIdentifiers([end($classParts)]);
+                    $em->setSharedManager($serviceManager->get('SharedEventManager'));
                 }
             }
         });
@@ -184,12 +185,6 @@ class ServiceManagerConfig implements ConfigInterface
                 $serviceManager->get('ListenersAttacher')->registerAttachable($instance);
             }
         });
-
-        /*$serviceManager->addInitializer(function ($instance) use ($serviceManager) {
-            if ($instance instanceof \Gbili\Miner\EventManagerAwareSharedManagerExpectedInterface) {
-                $instance->getEventManager()->setSharedManager($serviceManager->get('SharedEventManager'));
-            }
-        });*/
 
         $serviceManager->addInitializer(function ($instance) use ($serviceManager) {
             if ($instance instanceof \Gbili\Miner\ContentsFetcherAggregateAwareInterface) {

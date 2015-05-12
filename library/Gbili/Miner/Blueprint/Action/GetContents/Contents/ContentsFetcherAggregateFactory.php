@@ -13,18 +13,24 @@ class ContentsFetcherAggregateFactory implements \Zend\ServiceManager\FactoryInt
         $fetcherAggregate = new ContentsFetcherAggregate();
 
         //Default fetchers
-        $fetcherAggregate->addFetcher(new Savable(), 2); //Set higher priority for Savable
-        $fetcherAggregate->addFetcher(new FileGetContents(), 1);
 
         $config = $sm->get('ApplicationConfig');
-        if (isset($config['contents_fetcher_aggregate']['queue'])) {
-            foreach ($config['contents_fetcher_aggregate']['queue'] as $priority => $listOfFetchersInSamePriority) {
-                if (!is_array($listOfFetchersInSamePriority)) {
-                    $listOfFetchersInSamePriority = array($listOfFetchersInSamePriority);
-                }
-                foreach ($listOfFetchersInSamePriority as $fetcher) {
-                    $fetcherAggregate->addFetcher($fetcher, $priority);
-                }
+
+        if (!isset($config['contents_fetcher_aggregate']['queue'])) {
+            $config['contents_fetcher_aggregate'] = [ 
+                'queue' => [
+                    1 => [new Savable,],
+                    9 => [new FileGetContents,],
+                ],
+            ];
+        }
+
+        foreach ($config['contents_fetcher_aggregate']['queue'] as $priority => $listOfFetchersInSamePriority) {
+            if (!is_array($listOfFetchersInSamePriority)) {
+                $listOfFetchersInSamePriority = array($listOfFetchersInSamePriority);
+            }
+            foreach ($listOfFetchersInSamePriority as $fetcher) {
+                $fetcherAggregate->addFetcher($fetcher, $priority);
             }
         }
 
