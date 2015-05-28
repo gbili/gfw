@@ -1,27 +1,21 @@
 <?php
 namespace Gbili\Miner\Blueprint\Action;
 
-use Gbili\Miner\Blueprint\Action\GetContents\Callback\Wrapper;
-use Gbili\Out\Out;
-use Gbili\Url\Url; 
-use Gbili\Encoding\Encoding;
-
 /**
  * Get the contents from a url and
  * converts the output to utf8 if needed
  * 
  * @author gui
- *
- *
  */
 class GetContents
 extends AbstractAction
+implements \Gbili\Miner\ContentsFetcherAggregateAwareInterface
 {
-	/**
-	 * 
-	 * @var unknown_type
-	 */
-	protected $callbackWrapper = null;
+
+    /**
+     * @var \Gbili\Miner\Blueprint\Action\GetContents\ContentsInterface the class responsible for getting the contents
+     */
+    protected $fetcherAggregate;
 	
 	/**
 	 * 
@@ -30,31 +24,9 @@ extends AbstractAction
 	protected $result = null;
 	
 	/**
-	 * 
-	 * @param Miner_Persistance_Blueprint_Action_GetContents_Callback_Wrapper $cW
-	 * @return unknown_type
-	 */
-	public function setCallbackWrapper(Wrapper $cW)
-	{
-		$this->callbackWrapper = $cW;
-	}
-	
-	/**
-	 * 
-	 * @return unknown_type
-	 */
-	public function getCallbackWrapper()
-	{
-		if (!$this->hasCallbackWrapper()) {
-			throw new Exception('The callback handler is not set');
-		}
-		return $this->callbackWrapper;
-	}
-	
-	/**
 	 * This type of action never has final results
 	 * (non-PHPdoc)
-	 * @see Blueprint/Miner_Persistance_Blueprint_Action#hasFinalResults()
+	 * @see Blueprint/Miner\Persistance\Blueprint\Action#hasFinalResults()
 	 */
 	public function hasFinalResults()
 	{
@@ -63,7 +35,7 @@ extends AbstractAction
 	
 	/**
 	 * (non-PHPdoc)
-	 * @see Blueprint/Miner_Persistance_Blueprint_Action#getResult($groupNumber)
+	 * @see Blueprint/Miner\Persistance\Blueprint\Action#getResult($groupNumber)
 	 */
 	public function getResult($groupNumber = null)
 	{
@@ -72,157 +44,92 @@ extends AbstractAction
 		}
 		return $this->result;
 	}
-	
-	/**
-	 * 
-	 * @param unknown_type $action
-	 * @return unknown_type
-	 */
-	protected function getInputFromAction($action, $groupNumber)
-	{
-		if (!$action instanceof Extract) {
-			throw new Exception("Parent must be of type extract when not root");
-		}
-		if (!$action->isExecuted()) {
-		    throw new Exception('Trying to get input from action that has not been executed');
-		}
-		if ($this->hasCallbackWrapper()) {
-		    return $action->getResults();
-		}
-		if (null === $groupNumber) {
-		    throw new Exception("Action needs a string as input. Array is allowed only when using callback. As it is not the root action you must specify the groupForInputData so it can take a single element from the parent extract element");
-		}
-		return $action->getResult($groupNumber);
-	}
-	
-	/**
-	 * 
-	 * @return boolean
-	 */
-	protected function hasCallbackWrapper()
-	{
-	    return null !== $this->callbackWrapper;
-	}
-	
-	/**
-	 * The input can come from three different places
-	 * -other action than parent : $otherInputAction & $otherActionGroupForInputData
-	 * -lastInput (in case there is a cw) : $lastInput 
-	 * -parent : $inputGroup
-	 * 
-	 * The normal action flow is that the roots gets input from bostrapInputData
-	 * then it executes, and the result is made available for the children
-	 * Then the child executes and so on.
-	 * However there may be cases, where some action will need to take
-	 * input from a child action so it can create more results. That's when
-	 * the flow changes for some loops, until the child cannot generate more
-	 * results. :/
-	 * 
-	 * @return unknown_type
-	 */
-	public function getInput()
-	{
-		if ($this->hasCallbackWrapper()) {
-            return $this->getInputFromCallback();
-		}
 
-		if ($this->needsInputFromOtherThanParent()) {
-	        return $this->getInputFromAction($this->otherInputAction, $this->otherActionGroupForInputData);
-		}
-		return $this->getInputFromAction($this->getParent(), $this->groupForInputData);
-	}
+    public function canGiveInputToAction(AbstractAction $action)
+    {
+        return $this->isExecuted();
+    }
+
+    public function giveInputToAction(AbstractAction $action)
+    {
+        if (!$this->canGiveInputToAction($action)) {
+            throw new \Exception('This action must be executed before being able to give results to anyone');
+        }
+        return $this->getResult();
+    }
 	
 	/**
 	 * 
-	 * @throws Exception
-	 */
-	protected function getInputFromCallback()
-	{
-	    if (!$this->getCallbackWrapper()->hasMoreLoops() || null === $this->lastInput) {
-	        throw new Exception("loop reached end cannot execute anymore, call clear() || lastInput is null");
-	    }
-	    return $this->getCallbackWrapper()->apply($this->lastInput);
-	}
-	
-	/**
-	 * If it needs input from other than parent, make
-	 * sure the input action has been executed or
-	 * return that for the moment it does not need
-	 * input from other than parent... maybe later,
-	 * when the other action is executed
-	 * 
-	 * @return boolean
-	 */
-	protected function needsInputFromOtherThanParent()
-	{
-	    return null !== $this->otherInputAction && $this->otherInputAction->isExecuted();
-	}
-	
-	/**
-	 * 
-	 * @return unknown_type
+	 * @return unknown\type
 	 */
 	protected function innerExecute()
 	{
-	    if ($this->parentIsExtractButDoesNotHaveTheInputGroupIAmReferringTo()) {
-            if (!$this->isOptional()) {
-                throw new \Exception('Referring to an input group that does not exist in extract parent resultset');
+        $this->executionSucceed = false;
+        $input = $this->getInputFromAction();
+
+        if ($input) {
+            $url = new \Gbili\Url\Url($input);
+            if (!$url->isValid()) {
+                throw new Exception("the url string is not valid given : " . print_r($url));
             }
-            return false;
-	    }
-
-		$input = $this->getInput();
-
-		$url = new Url($input);
-		if (!$url->isValid()) {
-			throw new Exception("the url string is not valid given : " . print_r($url));
-		}
-		
-		$result = $this->getContents($url);
-		
-		if (false === $result) {
-			return $this->executionSucceed = false; //throw new Exception('file_get_contents() did not succeed, url : ' . print_r($url->toString(), true));
-		}
-		
-		$this->result     = $result;
-		$this->lastInput  = $input;
-		
-		return $this->executionSucceed = true;
+            $result = $this->getContents($url);
+            
+            if (false !== $result) {
+                $this->result     = $result;
+                $this->lastInput  = $input;
+                $this->executionSucceed = true;
+            }
+        }
+		return $this->executionSucceed;
 	}
+
+    /**
+     * The object used to get the contents from whatever support
+     *
+     * @return \Gbili\Miner\Blueprint\Action\GetContents\ContentsInterface
+     */
+    public function getFetcherAggregate()
+    {
+        if (null === $this->fetcherAggregate) {
+            throw new \Exception('No fetcher aggregate was set');
+        }
+        return $this->fetcherAggregate;
+    }
+
+    /**
+     * The object used to get the contents from whatever support
+     *
+     * @param \Gbili\Miner\Blueprint\Action\GetContents\ContentsInterface
+     * @return self
+     */
+    public function setFetcherAggregate(\Gbili\Miner\Blueprint\Action\GetContents\Contents\ContentsFetcherAggregateInterface $fetcherAggregate)
+    {
+        $this->fetcherAggregate = $fetcherAggregate;
+        return $this;
+    }
 	
 	/**
 	 * Allow reuse of fetched contents
-	 * @param Url $url
+	 * @param \Gbili\Url\UrlInterface $url
 	 */
-	protected function getContents(Url $url)
+	protected function getContents(\Gbili\Url\UrlInterface $url)
 	{
-        $c = new GetContents\Contents\Savable();
-        $c->setUrl($url);
-        $result = $c->getContents();
+        $fetcherAggregate = $this->getFetcherAggregate();
+        $fetcherAggregate->fetch($url);
 
-        //Apply a delay (even if it is after the actual fetching,
-        //it will delay the rest of the app, thus next fetch)
-        if ($c->isFreshContents()) {
-            $this->getBlueprint()->getServiceManager()->get('Delay')->reset()->apply();
+        if (!$result = $fetcherAggregate->getContent()) {
+            throw new \Exception('No fetcher was able to fetch contents.');
         }
-
-        if (false !== $result) {
-            $c->save();
-        }
-
 	    return $result;
 	}
-	
+
 	/**
 	 * (non-PHPdoc)
-	 * @see Blueprint/Miner_Persistance_Blueprint_Action#clear()
+	 * @see Blueprint/Miner\Persistance\Blueprint\Action#clear()
 	 */
 	protected function innerClear()
 	{
 		$this->result = null;
-		if ($this->hasCallbackWrapper()) {
-			$this->getCallbackWrapper()->rewindLoop();
-		}
 	}
 	
 	/**
@@ -231,12 +138,23 @@ extends AbstractAction
 	 */
 	protected function innerHasMoreResults()
 	{
-	    return $this->hasCallbackWrapper() && $this->getCallbackWrapper()->hasMoreLoops();
+        //Allow callbacks to tell whether they can provide more urls or not 
+        $responses = $this->getEventManager()->trigger(
+            'generateMoreResults',
+            $this,
+            [],
+            function ($listenerReturn) {return $listenerReturn;} //Meets our expected result, will setStopped
+        );
+        $moreResults = false;
+        if ($responses->stopped()) {
+            $moreResults = $responses->last();
+        }
+        return $moreResults;
 	}
 	
 	/**
 	 * (non-PHPdoc)
-	 * @see Blueprint/Miner_Persistance_Blueprint_Action#spit()
+	 * @see Blueprint/Miner\Persistance\Blueprint\Action#spit()
 	 */
 	public function spit()
 	{

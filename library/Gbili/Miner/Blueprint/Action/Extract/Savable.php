@@ -2,8 +2,7 @@
 namespace Gbili\Miner\Blueprint\Action\Extract;
 
 use Gbili\Miner\Blueprint\Action\Savable\AbstractSavable,
-    Gbili\Miner\Blueprint\Action\Savable\Exception,
-    Gbili\Miner\Blueprint;
+    Gbili\Miner\Blueprint\Action\Savable\Exception;
 
 /**
  * This class is not meant for any great work, just to ensure
@@ -32,7 +31,7 @@ extends AbstractSavable
 	{
 		parent::__construct();
 		//set the type on construction forced by parent
-		$this->setElement('type', (integer) Blueprint::ACTION_TYPE_EXTRACT);
+		$this->setElement('type', (integer) \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_EXTRACT);
 	}
 	
 	/**
@@ -78,7 +77,7 @@ extends AbstractSavable
 		}
 		return $this->getElement('groupResultMapping');
 	}
-	
+
 	/**
 	 * 
 	 * @return unknown_type
@@ -87,7 +86,7 @@ extends AbstractSavable
 	{
 		return $this->isSetKey('groupResultMapping');
 	}
-	
+
 	/**
 	 * Proxy + added functionality (allow to set entity and method intercept at same time)
 	 * @param unknown_type $group
@@ -124,7 +123,7 @@ extends AbstractSavable
 		}
 		return $this;
 	}
-	
+
 	/**
 	 * Proxy
 	 * 
@@ -137,7 +136,7 @@ extends AbstractSavable
 		$this->getGroupResultMapping()->interceptGroupsOneByOne($groups, $methodName);
 		return $this;
 	}
-	
+
 	/**
 	 * Proxy
 	 * 
@@ -150,6 +149,4 @@ extends AbstractSavable
 		$this->getGroupResultMapping()->interceptGroupsTogether($groups, $methodName);
 		return $this;
 	}
-	
-	
 }

@@ -2,7 +2,6 @@
 namespace Gbili\Miner\Blueprint\Action\Savable;
 
 use Gbili\Savable\Savable;
-use Gbili\Miner\Blueprint;
 use Gbili\Miner\Blueprint\Savable as BlueprintSavable;
 use Gbili\Miner\Blueprint\Action\Savable\Db\Req;
 use Gbili\Miner\Blueprint\Action\Extract\Savable as ExtractSavable;
@@ -25,9 +24,14 @@ abstract class AbstractSavable extends Savable
 	
 	/**
 	 * 
-	 * @var unknown_type
+	 * @var string 
 	 */
-	const DEFAULT_INPUT_PARENT_REGEX_GROUP_NUMBER = 1;
+	const DEFAULT_INPUT_PARENT_REGEX_GROUP_NUMBER = '0';
+
+    public static function clearOrder()
+    {
+        self::$order = array();
+    }
 
 	/**
 	 * Change requestor class name
@@ -149,10 +153,10 @@ abstract class AbstractSavable extends Savable
 	public static function getInstanceOfType($type)
 	{
 		switch ($type) {
-			case Blueprint::ACTION_TYPE_EXTRACT;
+			case \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_EXTRACT;
 				$instance = new ExtractSavable();
 				break;
-			case Blueprint::ACTION_TYPE_GETCONTENTS;
+			case \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_GETCONTENTS;
 				$instance = new GetContentsSavable();
 				break;
 			default;
@@ -200,7 +204,6 @@ abstract class AbstractSavable extends Savable
 	public function setBlueprint(BlueprintSavable $b)
 	{
 		$this->setElement('blueprint', $b);
-		
 		return $this;
 	}
 	
@@ -228,7 +231,7 @@ abstract class AbstractSavable extends Savable
 	 */
 	public function isRoot()
 	{
-		return ($this->getType() === Blueprint::ACTION_TYPE_GETCONTENTS && !$this->isSetKey('parentAction'));
+		return ($this->getType() === \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_GETCONTENTS && !$this->isSetKey('parentAction'));
 	}
 	
 	/**
@@ -374,15 +377,14 @@ abstract class AbstractSavable extends Savable
 	
 	/**
 	 * Sets the input group to default when the parent is of type extract
-	 * otherwise it sets the input group to no group specified in requestor
-	 * 
+	 * otherwise it sets the input group to no_group specified in requestor
 	 * 
 	 * @return unknown_type
 	 */
 	public function getInputParentRegexGroup()
 	{
 		if (!$this->isSetKey('inputParentRegexGroup')) {
-			if ($this->hasParent() && $this->getParent()->getType() === Blueprint::ACTION_TYPE_EXTRACT) {
+			if ($this->hasParent() && $this->getParent()->getType() === \Gbili\Miner\Blueprint\AbstractBlueprint::ACTION_TYPE_EXTRACT) {
 				$this->setInputParentRegexGroup(self::DEFAULT_INPUT_PARENT_REGEX_GROUP_NUMBER);
 			} else {
 				$this->setInputParentRegexGroup(Req::DEFAULT_NO_INPUT_PARENT_REGEX_GROUP_NUMBER);

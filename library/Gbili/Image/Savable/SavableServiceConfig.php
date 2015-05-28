@@ -36,7 +36,7 @@ implements ConfigInterface
     public function configureServiceManager(ServiceLocatorInterface $serviceLocator)
     {
         $config = $serviceLocator->get('Config');
-        
+
         if (isset($config['image_savable']) && isset($config['image_savable']['dir'])) {
             $dir = $config['image_savable']['dir'];
             if (!is_dir($dir)) {

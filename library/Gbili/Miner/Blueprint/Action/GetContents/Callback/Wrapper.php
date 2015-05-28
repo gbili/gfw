@@ -41,7 +41,7 @@ class Wrapper
 	 * @var unknown_type
 	 */
 	private $hasMoreLoops = null;
-	
+
 	/**
 	 * Instantiates the right class and creates the params
 	 * array, that will be passed to the subclass applyCallback() method
@@ -59,6 +59,17 @@ class Wrapper
 		$this->callbackInstance->setMethodLoopReachedEndState($methodName, false);
 		$this->callbackInstance->setMethodLoopIsFirstTime($methodName, true);
 	}
+
+    /**
+     * Tells the Callback Wrapper Aggregate to stop calling apply()
+     * on the rest of the callback wrapper aggregate queue
+     * Should be set by the callback calling setStopPropagation
+     * @return boolean
+     */
+    public function stopPropagation()
+    {
+        return $this->callbackInstance->stopPropagation();
+    }
 	
 	/**
 	 * 
@@ -141,7 +152,7 @@ class Wrapper
 	public function rewindLoop()
 	{
 		$this->callbackInstance->setMethodLoopReachedEndState($this->methodName, false);
-		$this->__callbackInstance->setMethodLoopIsFirstTime($this->methodName, true);
+		$this->callbackInstance->setMethodLoopIsFirstTime($this->methodName, true);
 	}
 	
 	/**

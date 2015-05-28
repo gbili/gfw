@@ -1,7 +1,7 @@
 <?php
 namespace Gbili\Miner\Blueprint\Action;
 
-interface RootAction
+interface RootActionInterface
 {
     public function setBootstrapData($input);
 }

@@ -20,7 +20,7 @@ use Gbili\Db\Registry          as DbRegistry;
  * @author gui
  *
  */
-class Persistance implements EventManagerAwareInterface, AttachableListenersInterface
+class Persistance implements EventManagerAwareInterface, HasAttachableListenersInterface
 {
     use EventManagerAwareTrait;
     

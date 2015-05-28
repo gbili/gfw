@@ -3,7 +3,10 @@ namespace Gbili\Db\Req;
 
 abstract class AbstractInstaller
 {
-    const TABLES_SQL_FILE_RELATIVE_PATH = '/config/tables.sql';
+    /**
+     * @var string path to schema file
+     */
+    protected $tablesSchemaPath;
     
     /**
      * What Gbili\Db\Req\AbstractReq prefixed adapter
@@ -12,6 +15,12 @@ abstract class AbstractInstaller
      * @var string
      */
     protected $adminReqAdapterPrefix = null;
+
+    /**
+     * If tables already exist, overwrite them
+     * @var boolean
+     */
+    protected $deleteExisting = false;
     
     /**
      * On install fail contains message
@@ -49,9 +58,27 @@ abstract class AbstractInstaller
      * @throws Exception
      * @return boolean
      */
-    public function install($deleteExisting = false)
+    public function install()
     {
-        $schemaFilePath = $this->getBaseDir() . $this->getTableSchemaPath();
+        $sql = $this->getSchemaDefinition();
+        if (false === $this->deleteExisting && $this->hasExistingTables()) {
+            $this->error = 'The database already has tables, call install($deleteExisting = true) to overwrite them';
+            return false;
+        }
+        
+        $this->uninstall($this->deleteExisting);
+        $this->getAdminReq()->insertUpdateData($sql);
+        
+        $this->resetExistingTables();
+        return true;
+    }
+
+    /**
+     * @var
+     */
+    public function getSchemaDefinition()
+    {
+        $schemaFilePath = realpath($this->getTableSchemaPath());
         if (!file_exists($schemaFilePath)) {
             $this->error = 'Check out your miner library, '. $schemaFilePath .'is missing';
             return false;
@@ -62,17 +89,7 @@ abstract class AbstractInstaller
             $this->error = 'Could not get contents';
             return false;
         }
-        
-        if (false === $deleteExisting && $this->hasExistingTables()) {
-            $this->error = 'The database already has tables, call install($deleteExisting = true) to overwrite them';
-            return false;
-        }
-        
-        $this->uninstall($deleteExisting);
-        $this->getAdminReq()->insertUpdateData($sql);
-        
-        $this->resetExistingTables();
-        return true;
+        return $sql;
     }
     
     /**
@@ -133,7 +150,6 @@ abstract class AbstractInstaller
     public function getAdminReq()
     {
         if (null === $this->adminReq) {
-            echo 'ADAPTER PREFIX FOR ADMIN: ' . $this->getAdapterPrefix() . "\n";
             $this->adminReq = new Admin($this->getAdapterPrefix());
         }
         return $this->adminReq;
@@ -176,15 +192,36 @@ abstract class AbstractInstaller
      */
     public function getTableSchemaPath()
     {
-        return self::TABLES_SQL_FILE_RELATIVE_PATH;
+        if (null === $this->tablesSchemaPath) {
+            throw new \Exception('Must set the tables schema file path');
+        }
+        return $this->tablesSchemaPath;
     }
     
+    /**
+     * 
+     * @return string
+     */
+    public function setTableSchemaPath($path)
+    {
+        $this->tablesSchemaPath = $path;
+        return $this;
+    }
+
+    /**
+     *
+     * @param delete existing $bool
+     */
+    public function deleteExisting($bool)
+    {
+        $this->deleteExisting = (boolean) $bool; 
+        return $this;
+    }
+
     /**
      * A regex string capable of matching every table name related to our classes
      * 
      * @return string
      */
     abstract public function getRegexMatchingTableNames();
-    
-    abstract public function getBaseDir();
 }

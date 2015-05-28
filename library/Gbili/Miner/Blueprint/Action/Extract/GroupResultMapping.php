@@ -99,9 +99,6 @@ class GroupResultMapping
 	 */
 	public function spitGroupAsEntity($group, $entity, $isOptional)
 	{
-		if (!is_int($entity)) {
-			throw new GroupResultMapping\Exception('$entity must be an integer');
-		}
 		if (!is_bool($isOptional)) {
 			throw new GroupResultMapping\Exception('$isOptional must be a boolean');
 		}

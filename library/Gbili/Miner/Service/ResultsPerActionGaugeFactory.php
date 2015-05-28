@@ -22,6 +22,9 @@ class ResultsPerActionGaugeFactory implements FactoryInterface
         
         // Check If action exists
         $blueprint  = $sm->get('Blueprint');
+        if (!$blueprint->hasAction($actionId)) {
+            throw new \Exception('Trying to monitor results per action on a non existing action id: ' . $actionId);
+        }
         $blueprint->getAction($actionId);
         
         $gauge = new ResultsPerActionGauge($maxResults);

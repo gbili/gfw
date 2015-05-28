@@ -29,6 +29,8 @@ class Registry
 	 * @var unknown_type
 	 */
 	private static $instances;
+
+    protected static $classNameGenerator;
 	
 	/**
 	 * Make it a class static
@@ -45,17 +47,58 @@ class Registry
 	 */
 	public static function getInstance($className)
 	{
-		//allow the user to pass an instance intead of the class name
-		if (is_object($className)) {
-			$className = get_class($className);
-		}	
-		//append the end of full class name
-		$className = (false === strpos($className, self::$classNameEndPart))? $className . self::$classNameEndPart : $className;
-		if (!isset(self::$instances[$className])) {
+        $className = self::getReqClassName($className);
+		if (!self::hasInstance($className)) {
 			self::$instances[$className] = new $className();
 		}
 		return self::$instances[$className];
 	}
+
+    public static function setReqClassNameGenerator($generator)
+    {
+        if (!is_callable($generator)) {
+            throw new Exception('Generator is not callable');
+        }
+        self::$classNameGenerator = $generator;
+    }
+
+    public static function getReqClassNameGenerator()
+    {
+        if (null === self::$classNameGenerator) {
+            self::setReqClassNameGenerator(self::getDefaultReqClassNameGenerator());
+        }
+        return self::$classNameGenerator;
+    }
+
+    public static function getDefaultReqClassNameGenerator()
+    {
+        return function ($className) {
+            //allow the user to pass an instance intead of the class name
+            if (is_object($className)) {
+                $className = get_class($className);
+            }
+            //append the end of full class name
+            $className = (false === strpos($className, \Gbili\Db\Registry::getClassNameEndPart()))? $className . \Gbili\Db\Registry::getClassNameEndPart() : $className;
+            return $className;
+        };
+    }
+
+    /**
+     *
+     */
+    public static function getReqClassName($className)
+    {
+        $generator = self::getReqClassNameGenerator();
+        return call_user_func($generator, $className);
+    }
+
+    /**
+     * @return boolean whether there is an instance with that className
+     */
+    public static function hasInstance($className)
+    {
+        return isset(self::$instances[self::getReqClassName($className)]);
+    }
 	
 	/**
 	 * Add an instance to the registry that needs
@@ -66,7 +109,16 @@ class Registry
 	 */
 	public static function setInstance($instance)
 	{
-		self::$instances[get_class($instance)] = $instance;
+        if (!$instance instanceof \Gbili\Db\Req\AbstractReq) {
+            throw new Exception('Instances must subclass \Gbili\Db\Req\AbstractReq');
+        }
+        $instanceClassName = get_class($instance);
+        if ($instanceClassName !== self::getReqClassName($instance)) {
+            throw new Exception('Cannot register instances with a differing classNameEndPart');
+        }
+        if (!self::hasInstance($instance)) {
+            self::$instances[self::getReqClassName($instance)] = $instance;
+        }
 	}
 	
 	/**
@@ -100,29 +152,37 @@ class Registry
 	 * @param unknown_type $end
 	 * @return unknown_type
 	 */
-	public static function setClassnameEndPart($end)
+	public static function setClassNameEndPart($end)
 	{
 		if (!is_string($end))  {
-			throw new Exception('Error : the setClassnameEndPart() parameter must be a string');
+			throw new Exception('Error : the setClassNameEndPart() parameter must be a string');
 		}
 		if ('\\' !== substr($end, 0, 1)) {
 		    $end = '\\' . $end;
 		}
 		self::$classNameEndPart = $end;
 	}
+
+    /**
+     * @return
+     */
+    public static function getClassNameEndPart()
+    {
+        return self::$classNameEndPart;
+    }
 	
 	/**
 	 * Get the class names that have currently been registered
 	 * 
 	 * @return unknown_type
 	 */
-	public static function getRegisteredClassnames()
+	public static function getRegisteredClassNames()
 	{
 		return array_keys(self::$instances);
 	}
 	
 	/**
-	 * get an array with classname and isntance
+	 * get an array with className and isntance
 	 * 
 	 * @return unknown_type
 	 */

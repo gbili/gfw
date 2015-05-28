@@ -1,7 +1,7 @@
 <?php
 namespace Gbili\Miner\Service;
 
-use Gbili\Miner\AttachableListenersInterface;
+use Gbili\Miner\HasAttachableListenersInterface;
 use Zend\ServiceManager\ConfigInterface;
 use Zend\ServiceManager\ServiceManager;
 use Zend\EventManager\EventManagerAwareInterface;
@@ -16,7 +16,10 @@ class ServiceManagerConfig implements ConfigInterface
      * @var array
      */
     protected $invokables = array(
-        'SharedEventManager' => 'Zend\EventManager\SharedEventManager',
+        'ActionExtract'         => 'Gbili\Miner\Blueprint\Action\Extract',
+        'ActionGetContents'     => 'Gbili\Miner\Blueprint\Action\GetContents',
+        'ActionRootGetContents' => 'Gbili\Miner\Blueprint\Action\GetContents\RootGetContents',
+        'ListenersAttacher'     => 'Gbili\Miner\ListenersAttacher',
     );
 
     /**
@@ -30,9 +33,12 @@ class ServiceManagerConfig implements ConfigInterface
         'PersistanceListenerAggregate'                  => 'Gbili\Miner\Service\PersistanceListenerAggregateFactory', 
         'LexerListenerAggregate'                        => 'Gbili\Miner\Service\LexerListenerAggregateFactory', 
         'Thread'                                        => 'Gbili\Miner\Service\ThreadFactory',
+        'FlowEvaluator'                                 => 'Gbili\Miner\Service\FlowEvaluatorFactory',
         'Application'                                   => 'Gbili\Miner\Service\ApplicationFactory',
         'ApplicationListenerAggregate'                  => 'Gbili\Miner\Service\ApplicationListenerAggregateFactory',
         'Blueprint'                                     => 'Gbili\Miner\Service\BlueprintFactory',
+        '\Gbili\Miner\Blueprint\DbReqBlueprint'         => 'Gbili\Miner\Service\DbReqBlueprintFactory',
+        '\Gbili\Miner\Blueprint\ArrayBlueprint'         => 'Gbili\Miner\Service\ArrayBlueprintFactory',
         'PersistanceAllowedFailsGauge'                  => 'Gbili\Miner\Service\PersistanceAllowedFailsGaugeFactory',
         'PersistanceAllowedFailsGaugeListenerAggregate' => 'Gbili\Miner\Service\PersistanceAllowedFailsGaugeListenerAggregateFactory',
         'ExecutionAllowedFailsGauge'                    => 'Gbili\Miner\Service\ExecutionAllowedFailsGaugeFactory',
@@ -42,8 +48,9 @@ class ServiceManagerConfig implements ConfigInterface
         'ResultsPerActionGauge'                         => 'Gbili\Miner\Service\ResultsPerActionGaugeFactory',
         'ResultsPerActionGaugeListenerAggregate'        => 'Gbili\Miner\Service\ResultsPerActionGaugeListenerAggregateFactory',
         'Delay'                                         => 'Gbili\Miner\Service\DelayFactory',
-        'ListenersAttacher'                             => 'Gbili\Miner\Service\ListenersAttacherFactory',
         'Persistance'                                   => 'Gbili\Miner\Service\PersistanceFactory',
+        'ContentsFetcherAggregate'                      => 'Gbili\Miner\Blueprint\Action\GetContents\Contents\ContentsFetcherAggregateFactory',
+        'SharedEventManager'                            => 'Gbili\Miner\Service\SharedEventManagerFactory',
     );
 
     /**
@@ -60,6 +67,8 @@ class ServiceManagerConfig implements ConfigInterface
      */
     protected $aliases = array(
         'Zend\EventManager\EventManagerInterface' => 'EventManager',
+        'ArrayBlueprint'=> '\Gbili\Miner\Blueprint\ArrayBlueprint',
+        'DbReqBlueprint'=> '\Gbili\Miner\Blueprint\DbReqBlueprint',
     );
 
     /**
@@ -71,9 +80,19 @@ class ServiceManagerConfig implements ConfigInterface
      * @var array
      */
     protected $shared = array(
-        //'EventManager' => false,
+        'SharedEventManager' => true,
         'PersistableInstance' => false,
+        'ActionRootGetContents' => false,
+        'ActionGetContents' => false,
+        'ActionExtract' => false,
     );
+
+    /**
+     * Initializers
+     *
+     * @var array
+     */
+    protected $initializers = array();
 
     /**
      * Constructor
@@ -138,17 +157,16 @@ class ServiceManagerConfig implements ConfigInterface
             $serviceManager->setShared($name, $value);
         }
 
-        /*$serviceManager->addInitializer(function ($instance) use ($serviceManager) {
+        $serviceManager->addInitializer(function ($instance) use ($serviceManager) {
             if ($instance instanceof EventManagerAwareInterface) {
                 if ($instance->getEventManager() instanceof EventManagerInterface) {
-                    $instance->getEventManager()->setSharedManager(
-                        $serviceManager->get('SharedEventManager')
-                    );
-                } else {
-                    $instance->setEventManager($serviceManager->get('EventManager'));
+                    $em = $instance->getEventManager();
+                    $classParts = explode('\\', get_class($instance));
+                    $em->addIdentifiers([end($classParts)]);
+                    $em->setSharedManager($serviceManager->get('SharedEventManager'));
                 }
             }
-        });*/
+        });
 
         $serviceManager->addInitializer(function ($instance) use ($serviceManager) {
             if ($instance instanceof ServiceManagerAwareInterface) {
@@ -163,8 +181,14 @@ class ServiceManagerConfig implements ConfigInterface
         });
         
         $serviceManager->addInitializer(function ($instance) use ($serviceManager) {
-            if ($instance instanceof AttachableListenersInterface) {
+            if ($instance instanceof HasAttachableListenersInterface) {
                 $serviceManager->get('ListenersAttacher')->registerAttachable($instance);
+            }
+        });
+
+        $serviceManager->addInitializer(function ($instance) use ($serviceManager) {
+            if ($instance instanceof \Gbili\Miner\ContentsFetcherAggregateAwareInterface) {
+                $instance->setFetcherAggregate($serviceManager->get('ContentsFetcherAggregate'));
             }
         });
         

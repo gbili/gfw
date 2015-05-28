@@ -1,20 +1,23 @@
 <?php
 namespace Gbili\Miner\Service;
 
-use Gbili\Miner\Application\Thread;
-use Zend\ServiceManager\ServiceLocatorInterface;
-use Zend\ServiceManager\FactoryInterface;
-
-class ThreadFactory implements FactoryInterface
+class ThreadFactory implements \Zend\ServiceManager\FactoryInterface
 {
     
     /**
      * 
-     * @param ServiceLocatorInterface $sm
+     * @param \Zend\ServiceManager\ServiceLocatorInterface $sm
      * @throws Exception
      */
-    public function createService(ServiceLocatorInterface $sm)
+    public function createService(\Zend\ServiceManager\ServiceLocatorInterface $sm)
     { 
-        return new Thread($sm->get('Blueprint'));
+        $config = $sm->get('ApplicationConfig');
+        $blueprint = $sm->get('Blueprint');
+        $rootAction = $blueprint->getRoot();
+        $thread = new \Gbili\Miner\Application\Thread($rootAction);
+        if (isset($config['limited_results_action_id'])) {
+            $thread->addListener('ResultsPerActionGaugeListenerAggregate');
+        }
+        return $thread;
     }
 }

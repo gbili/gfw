@@ -101,17 +101,17 @@ LOCK TABLES `BluePrint_CMPaths` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BPAction_CallbackMethod`
+-- Table structure for table `BPAction_Callable`
 -- associates the methods in blueprint's callback class
 -- to each get contents action.
 -- The filosofy is different here, the methods are created
 -- custom to each action, that's why they don't deserve an
 -- id
 
-DROP TABLE IF EXISTS `BPAction_CallbackMethod`;
+DROP TABLE IF EXISTS `BPAction_Callable`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BPAction_CallbackMethod` (
+CREATE TABLE `BPAction_Callable` (
   `bPActionId` int(10) unsigned NOT NULL default '0',
   `methodName` varchar(255) NOT NULL default '',
   PRIMARY KEY  (`bPActionId`)
@@ -119,25 +119,25 @@ CREATE TABLE `BPAction_CallbackMethod` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BPAction_CallbackMethod`
+-- Dumping data for table `BPAction_Callable`
 --
 
-LOCK TABLES `BPAction_CallbackMethod` WRITE;
-/*!40000 ALTER TABLE `BPAction_CallbackMethod` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BPAction_CallbackMethod` ENABLE KEYS */;
+LOCK TABLES `BPAction_Callable` WRITE;
+/*!40000 ALTER TABLE `BPAction_Callable` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BPAction_Callable` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BPAction_RegexGroup_r_CallbackMethod_ParamNum`
+-- Table structure for table `BPAction_RegexGroup_r_Callable_ParamNum`
 -- as the callback methods are tied to their bpaction, we can
 -- uniquely identify the method by the bPActionId
 -- the param numbers for each method are unique; there not
 -- one method with two param numbers that are the same
 
-DROP TABLE IF EXISTS `BPAction_RegexGroup_r_CallbackMethod_ParamNum`;
+DROP TABLE IF EXISTS `BPAction_RegexGroup_r_Callable_ParamNum`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BPAction_RegexGroup_r_CallbackMethod_ParamNum` (
+CREATE TABLE `BPAction_RegexGroup_r_Callable_ParamNum` (
   `bPActionId` int(10) unsigned NOT NULL default '0',
   `paramNum` int(10) unsigned NOT NULL default '0',
   `regexGroup` int(10) unsigned NOT NULL default '0',
@@ -146,23 +146,23 @@ CREATE TABLE `BPAction_RegexGroup_r_CallbackMethod_ParamNum` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BPAction_RegexGroup_r_CallbackMethod_ParamNum`
+-- Dumping data for table `BPAction_RegexGroup_r_Callable_ParamNum`
 --
 
-LOCK TABLES `BPAction_RegexGroup_r_CallbackMethod_ParamNum` WRITE;
-/*!40000 ALTER TABLE `BPAction_RegexGroup_r_CallbackMethod_ParamNum` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BPAction_RegexGroup_r_CallbackMethod_ParamNum` ENABLE KEYS */;
+LOCK TABLES `BPAction_RegexGroup_r_Callable_ParamNum` WRITE;
+/*!40000 ALTER TABLE `BPAction_RegexGroup_r_Callable_ParamNum` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BPAction_RegexGroup_r_Callable_ParamNum` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BluePrint_MethodMethod`
+-- Table structure for table `BluePrint_Callable`
 -- contains the name of the methods in bluePrint's Method class
 -- note that methods can be used by many different actions
 
-DROP TABLE IF EXISTS `BluePrint_MethodMethod`;
+DROP TABLE IF EXISTS `BluePrint_Callable`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BluePrint_MethodMethod` (
+CREATE TABLE `BluePrint_Callable` (
   `methodId` int(10) unsigned NOT NULL auto_increment,
   `bPId` int(10) unsigned NOT NULL default '0',
   `name` varchar(255) NOT NULL default '',
@@ -171,22 +171,22 @@ CREATE TABLE `BluePrint_MethodMethod` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BluePrint_MethodMethod`
+-- Dumping data for table `BluePrint_Callable`
 --
 
-LOCK TABLES `BluePrint_MethodMethod` WRITE;
-/*!40000 ALTER TABLE `BluePrint_MethodMethod` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BluePrint_MethodMethod` ENABLE KEYS */;
+LOCK TABLES `BluePrint_Callable` WRITE;
+/*!40000 ALTER TABLE `BluePrint_Callable` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BluePrint_Callable` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `BPAction_RegexGroup_r_MethodMethod`
+-- Table structure for table `BPAction_RegexGroup_r_Callable`
 -- there can be many methods per action
 
-DROP TABLE IF EXISTS `BPAction_RegexGroup_r_MethodMethod`;
+DROP TABLE IF EXISTS `BPAction_RegexGroup_r_Callable`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `BPAction_RegexGroup_r_MethodMethod` (
+CREATE TABLE `BPAction_RegexGroup_r_Callable` (
   `bPAMMId` int(10) unsigned NOT NULL auto_increment,
   `bPActionId` int(10) unsigned NOT NULL default '0',
   `methodId` int(10) unsigned NOT NULL default '0',
@@ -197,12 +197,12 @@ CREATE TABLE `BPAction_RegexGroup_r_MethodMethod` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `BPAction_RegexGroup_r_MethodMethod`
+-- Dumping data for table `BPAction_RegexGroup_r_Callable`
 --
 
-LOCK TABLES `BPAction_RegexGroup_r_MethodMethod` WRITE;
-/*!40000 ALTER TABLE `BPAction_RegexGroup_r_MethodMethod` DISABLE KEYS */;
-/*!40000 ALTER TABLE `BPAction_RegexGroup_r_MethodMethod` ENABLE KEYS */;
+LOCK TABLES `BPAction_RegexGroup_r_Callable` WRITE;
+/*!40000 ALTER TABLE `BPAction_RegexGroup_r_Callable` DISABLE KEYS */;
+/*!40000 ALTER TABLE `BPAction_RegexGroup_r_Callable` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --

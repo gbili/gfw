@@ -1,11 +1,6 @@
 <?php
 namespace Gbili\Miner\Blueprint\Action;
 
-use Zend\EventManager\EventManagerAwareTrait;
-use Gbili\Miner\Blueprint;
-use Gbili\Stdlib\CircularCollection;
-use Gbili\Out\Out;
-
 /**
  * This will contain an object representation of
  * the action table set.
@@ -20,23 +15,35 @@ use Gbili\Out\Out;
  *
  */
 abstract class AbstractAction
+implements \Zend\EventManager\EventManagerAwareInterface
 {
-	use EventManagerAwareTrait;
-	
-	const EXECUTION_SUCCESS        = true;
-	const EXECUTION_FAIL           = false;
+    use \Zend\EventManager\EventManagerAwareTrait;
+
+	const EXECUTION_SUCCESS = true;
+	const EXECUTION_FAIL    = false;
+
+    /**
+     * @var array used to identify the eventis in shared events
+     */
+    protected $eventIdentifier;
+
+    /**
+     * Needed in extract action for input group
+     * @var array
+     */
+    protected $hydrationInfo;
 
 	/**
 	 * 
-	 * @var unknown_type
+	 * @var integer 
 	 */
-	private $id = null;
+	private $id;
 	
 	/**
 	 * 
-	 * @var Blueprint
+	 * @var \Gbili\Miner\BlueprintInterface
 	 */
-	private $blueprint = null;
+	private $blueprint;
 	
 	/**
 	 * Lets the Miner_Persistance_Persistance know whether
@@ -56,7 +63,7 @@ abstract class AbstractAction
 	 * 
 	 * @var AbstractAction
 	 */
-	protected $rootAction = null;
+	protected $rootAction;
 	
 	/**
 	 * Points to the parent action which
@@ -73,13 +80,20 @@ abstract class AbstractAction
 	protected $childActionsCollection = null;
 	
 	/**
-	 * The group in the parent results from which
-	 * this object will get its input data when
-	 * callin getParent()->getResult(_groupForInputData)
+     * An action can take input from different
+     * actions: either parent or a child action.
+     * Input groups are stored as actionId -> inputGroup
 	 * 
 	 * @var integer
 	 */
-	protected $groupForInputData = null;
+	protected $inputGroupByInputAction = array();
+
+    /**
+     * Contains the input action when not parent
+     *
+     * @var AbstractAction
+     */
+    protected $inputAction;
 	
 	/**
 	 * 
@@ -129,32 +143,27 @@ abstract class AbstractAction
 	 * 
 	 * @var unknown_type
 	 */
-	protected $otherActionInput = null;
-	
-	/**
-	 * Contains the action id from
-	 * which this action will take
-	 * input once it is available
-	 * 
-	 * @var unknown_type
-	 */
-	protected $otherInputAction = null;
-	
-	/**
-	 * Group number for input from other action
-	 * 
-	 * @var unknown_type
-	 */
-	protected $otherActionGroupForInputData = null;
-	
-	/**
-	 * 
-	 * @return unknown_type
-	 */
-	public function __construct()
-	{
-		
-	}
+	protected $actionInput;
+
+    /**
+     * This is how listeners can attach to a specific action identified
+     * by its id
+     * attach(actionId, eventName, callback, priority)
+     */
+    protected function setEventManagerIdentifiers()
+    {
+        if (null === $this->id) {
+            throw new \Exception('Make sure you set the id before calling this');
+        }
+        $fullSubclass = get_class($this);
+        $subclassnameParts = explode('\\', $fullSubclass);
+        $subclassname = end($subclassnameParts);
+        $this->eventIdentifier = [
+            $this->getId(), //"some id with spaces ok"
+            implode('.', [$subclassname, $this->getId()]), //"Extract.some id with spaces ok"
+        ];
+        $this->getEventManager()->addIdentifiers($this->eventIdentifier);
+    }
 	
 	/**
 	 * 
@@ -163,7 +172,9 @@ abstract class AbstractAction
 	 */
 	public function setId($id)
 	{
-		$this->id = (integer) $id;
+		$this->id = $id;
+        $this->setEventManagerIdentifiers();
+        return $this;
 	}
 	
 	/**
@@ -211,48 +222,92 @@ abstract class AbstractAction
 	 * Returns the action that should 
 	 * be used as input when available
 	 * 
-	 * @return unknown_type
+	 * @return AbstractAction 
 	 */
-	public function getOtherInputAction()
+	public function getInputAction()
 	{
-		if (null === $this->otherInputAction) {
-			throw new Exception("There is no other input actionId");
-		}
-		return $this->otherInputAction;
+        return (null === $this->inputAction || (!$this->inputAction->isExecuted()))
+            ? $this->getParent() 
+            : $this->inputAction;
 	}
 	
 	/**
-	 * Returns the action that should 
-	 * be used as input when available
+     * An action can take input from parent by default
+     * or from another action. inputAction holds the
+     * other action.
+     * The inputGroupByInputAction holds input group
+     * by actionId.
 	 * 
 	 * @return unknown_type
 	 */
-	public function setOtherInputActionInfo(AbstractAction $action, $groupForInputData = null)
+	public function setInputActionInfo(AbstractAction $action, $inputGroup = null)
 	{
-		$this->otherInputAction             = $action;
-		$this->otherActionGroupForInputData = $groupForInputData;
+        if ($action !== $this->getParent()) {
+            $this->inputAction = $action;
+        }
+        if (null !== $inputGroup && '' !== $inputGroup) {
+            $this->inputGroupByInputAction[$action->getId()] = is_numeric($inputGroup)? (integer) $inputGroup : $inputGroup;
+        }
 	}
+
+    /**
+     *
+     * @throws Exception when not set
+     * @return mixed:null|integer
+     */
+    public function getInputGroup(AbstractAction $action=null)
+    {
+        if (null === $action) {
+            $action = $this->getInputAction();
+        }
+        $id = $action->getId();
+        if (isset($this->inputGroupByInputAction[$id])) {
+            return $this->inputGroupByInputAction[$id];
+        }
+        return null;
+    }
+
+    /**
+     * Tells whether the input group has been set
+     */
+    public function hasInputGroup()
+    {
+        return $this->getInputGroup() !== null;
+    }
+
+    /**
+     * Try to get input from action
+     *
+     * @var 
+     */
+    public function getInputFromAction()
+    {
+	    if (!$this->getInputAction()->canGiveInputToAction($this)) {
+            if (!$this->isOptional()) {
+                throw new \Exception(
+                    'Action ' . get_class($this) . ' : ' . $this->getTitle() . ' InputGroup: ' . print_r($this->getInputGroup(), true) . "\n"
+                    . 'Parent' . get_class($this->getParent()) . ': ' . $this->getParent()->getTitle() . "\n"
+                    . 'Referring to an input group: ' . var_export($this->getInputGroup()) .  ' that does not exist in extract parent resultset');
+            }
+            return false;
+	    }
+    	
+		$input = $this->getInput();
+
+        $this->getEventManager()->trigger(
+            'executeInput',
+            $this,
+            [
+                'input' => $input,
+            ]
+        );
+
+        return $input;
+    }
 	
 	/**
 	 * 
-	 * @return boolean
-	 */
-	public function injectsParent()
-	{
-	    return $this->injectsParent;
-	}
-	
-	/**
-	 * 
-	 */
-	public function setInjectsParent()
-	{
-	    $this->injectsParent = true;
-	}
-	
-	/**
-	 * 
-	 * @return \Gbili\Miner\Blueprint
+	 * @return \Gbili\Miner\BlueprintInterface
 	 */
 	public function getBlueprint()
 	{
@@ -264,10 +319,10 @@ abstract class AbstractAction
 	
 	/**
 	 * 
-	 * @param Blueprint $b
+	 * @param \Gbili\Miner\BlueprintInterface $b
 	 * @return unknown_type
 	 */
-	public function setBlueprint(Blueprint $b)
+	public function setBlueprint(\Gbili\Miner\Blueprint\BlueprintInterface $b)
 	{
 		$this->blueprint = $b;
 	}
@@ -314,9 +369,9 @@ abstract class AbstractAction
 	
 	/**
 	 * 
-	 * @param \Gbili\Miner\Blueprint\Action\RootAction $action
+	 * @param \Gbili\Miner\Blueprint\Action\RootActionInterface $action
 	 */
-	public function setRoot(RootAction $action)
+	public function setRoot(\Gbili\Miner\Blueprint\Action\RootActionInterface $action)
 	{
 		$this->rootAction = $action;
 	}
@@ -324,7 +379,7 @@ abstract class AbstractAction
 	/**
 	 * Returns the pointer to the root action
 	 * 
-	 * @return \Gbili\Miner\Blueprint\Action\RootAction
+	 * @return \Gbili\Miner\Blueprint\Action\RootActionInterface
 	 */
 	public function getRoot()
 	{
@@ -360,7 +415,7 @@ abstract class AbstractAction
 	public function executionSucceed()
 	{
 	    if (!$this->isExecuted()) {
-	        throw new Exception('You must execute before checking this');
+	        throw new Exception('You must execute before checking this, action Id: ' . $this->getId());
 	    }
 	    return $this->executionSucceed;
 	}
@@ -390,7 +445,7 @@ abstract class AbstractAction
 	public function getChildrenCollection()
 	{
 	    if (null === $this->childActionsCollection) {
-	        $this->childActionsCollection = new CircularCollection();
+	        $this->childActionsCollection = new \Gbili\Stdlib\CircularCollection();
 	    }
 	    return $this->childActionsCollection;
 	}
@@ -401,21 +456,6 @@ abstract class AbstractAction
 	public function getChild()
 	{
 	    return $this->getChildrenCollection()->getCurrent();
-	}
-	
-	/**
-	 * The group from parent results where this action
-	 * will take its input data
-	 * 
-	 * @param $groupNumber
-	 * @return unknown_type
-	 */
-	public function setInputDataGroup($group)
-	{
-		if (!($this->getParent() instanceof Extract)) {
-			throw new Exception('The parent action must be of type Extract in order to set the group for input data');
-		}
-		$this->groupForInputData = $group;
 	}
 	
 	/**
@@ -487,8 +527,31 @@ abstract class AbstractAction
 	 * @return boolean
 	 */
 	public function hasMoreResults()
-	{
-	    return $this->isExecuted() && $this->innerHasMoreResults();
+    {   
+        $isExecuted = $this->isExecuted();
+        $innerHasMoreResults = $this->innerHasMoreResults();
+
+        // Allow listeners to tell whether an action has more
+        // results or not... This can mess the execution flow
+        // if not handled properly down the road; like if you
+        // tell there are more results when there aren't and
+        // you don't provide the additional results by listeninig
+        // to getResult.
+        $responses = $this->getEventManager()->trigger(
+            'hasMoreResults',
+            $this,
+            [
+                'isExecuted' => $isExecuted,
+                'hasMoreResults' => $innerHasMoreResults,
+            ],
+            function ($listenerReturn) {return !$listenerReturn;} //Stop using results of this executed action
+        );
+
+        if ($responses->stopped()) {
+            return $responses->last();
+        }
+
+        return $isExecuted && $innerHasMoreResults;
 	}
 	
 	/**
@@ -509,9 +572,49 @@ abstract class AbstractAction
 	abstract protected function innerExecute();
 	
 	/**
+	 * The input can come from three different places
+	 * -other action than parent
+	 * -lastInput (in case there is a cw) : $lastInput 
+	 * -parent : $inputGroup
 	 * 
+	 * The normal action flow is that the roots gets input from bostrapInputData
+	 * then it executes, and the result is made available for the children
+	 * Then the child executes and so on.
+	 * However there may be cases, where some action will need to take
+	 * input from a child action so it can create more results. That's when
+	 * the flow changes for some loops, until the child cannot generate more
+	 * results. :/
+	 * 
+	 * @return unknown\type
 	 */
-	abstract public function getInput();
+	public function getInput()
+	{
+        $responses = $this->getEventManager()->trigger(
+            'input', //event identifier
+            $this,
+            ['lastInput' => $this->lastInput],
+            function ($listenerReturn) {return is_string($listenerReturn);} //Meets our expected result, will setStopped
+        );
+        if ($responses->stopped()) {
+            return $responses->last();
+        }
+
+        //Input from action
+        $input = $this->getInputAction()->giveInputToAction($this);
+
+        //Allow other input action refactoring
+        $responses = $this->getEventManager()->trigger(
+            'inputFromAction', //event identifier
+            $this, //targed
+            ['input' => $input], // params
+            function ($listenerReturn) {return is_string($listenerReturn);} //Meets our expected result, will setStopped
+        );
+        if ($responses->stopped()) {
+            $input = $responses->last();
+        }
+
+		return $input;
+	}
 	
 	/**
 	 * 
@@ -520,35 +623,30 @@ abstract class AbstractAction
 	 */
 	final public function execute()
 	{
-		$ret = $this->innerExecute();
-		$this->executionSucceed = $ret;
-		$this->postExecute();
-		return $this->executionSucceed();
-	}
-	
-	/**
-	 * 
-	 * @return boolean
-	 */
-	protected function parentIsExtractButDoesNotHaveTheInputGroupIAmReferringTo()
-	{
-	    return ($this->getParent() instanceof Extract 
-    	      && null !== $this->groupForInputData 
-    	      && !$this->getParent()->hasGroup($this->groupForInputData));
-	}
-	
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	protected function postExecute()
-	{
+        $this->getEventManager()->trigger(
+            __FUNCTION__ . '.pre',
+            $this,
+            array('identifiers' => $this->getEventManager()->getIdentifiers())
+        );
+
+		$this->executionSucceed = $this->innerExecute();
+
+        $this->getEventManager()->trigger(
+            __FUNCTION__ . '.post',
+            $this,
+            array('status' => $this->executionSucceed)
+        );
 		// Make sure lastInput was set by subclass
 		// after execution
 		if ($this->executionSucceed() && null === $this->lastInput) {
 		    throw new Exception("Subclasses should keep track of lastInput by setting it after execution");
 		}
+
+		return $this->executionSucceed();
 	}
+
+    abstract public function canGiveInputToAction(AbstractAction $action);
+    abstract public function giveInputToAction(AbstractAction $action);
 	
 	/**
 	 * Clear will empty $results so new info is considered
@@ -557,7 +655,6 @@ abstract class AbstractAction
 	 * the first result
 	 * 
 	 * @note make sure to call clear from the last child
-	 * 
 	 */
 	public function clear()
 	{
@@ -565,8 +662,14 @@ abstract class AbstractAction
 			throw new Exception('You cannot clear the instance it has not been executed already call execute().');
 		}
 		$this->executionSucceed = null;
-		
-		$this->innerClear();
+
+        $this->innerClear();
+        //Allow callbacks and stuff to rewind the loop and stuff
+        $this->getEventManager()->trigger(
+            __FUNCTION__, //event identifier
+            $this,
+            []
+        );
 		
 		if (!$this->getChildrenCollection()->isEmpty()) {
     		$this->getChildrenCollection()->rewind();
@@ -583,24 +686,53 @@ abstract class AbstractAction
 	 * 
 	 * @return unknown_type
 	 */
-	public function clearMeAndOffspring($thisFull = true)
+	public function clearMeAndOffspring()
 	{
 		if ($this->hasChildren()) {
 			foreach ($this->getChildren() as $child) {
 				$child->clearMeAndOffspring();
 			}
 		}
-		return (true === $thisFull)? $this->fullClear() : $this->clear();
+		return $this->clear();
 	}
 	
 	public function toString()
 	{
 	    $optional = $this->isOptional()? "yes": "no";
-	    $str = "Action Type : " . get_class($this) . "\n";
-	    $str .= "Id       : {$this->getId()}\n";
-	    $str .= "Title    : {$this->getTitle()}\n";
-	    $str .= "Optional : $optional\n";
-	    $str .= "Input    : {$this->getInput()}\n";
+        $class = get_class($this);
+	    $str  = "Action Type : {$class}\n";
+	    $str .= "Id          : {$this->getId()}\n";
+	    $str .= "Title       : {$this->getTitle()}\n";
+	    $str .= "Optional    : $optional\n";
+	    $str .= "Input       : {$this->getInput()}\n";
 	    return $str;
 	}
+
+    public function getHydrationInfo()
+    {
+        return $this->hydrationInfo;
+    }
+
+    /**
+     * @param $info array
+     * @return void 
+     */
+    public function hydrate(array $info)
+    {
+        $this->hydrationInfo = $info;
+        $this->setId($info['actionId']);
+        if (isset($info['parentId']) && $this->getBlueprint()->hasAction($info['parentId']) && !($isRoot = ($info['parentId'] === $info['actionId']))) {
+            $parent = $this->getBlueprint()->getAction($info['parentId']);
+            $parent->addChild($this);
+        }
+        if (isset($info['title'])) {
+            $this->setTitle($info['title']);
+        }
+        if (isset($info['isOpt'])) {
+            $this->setAsOptional($info['isOpt']);
+        }
+        if (isset($info['isNewInstanceGeneratingPoint']) && $info['isNewInstanceGeneratingPoint']) {
+	        $this->setAsNewInstanceGeneratingPoint();
+        }
+    }
 }

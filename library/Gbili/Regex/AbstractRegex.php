@@ -205,6 +205,16 @@ class AbstractRegex
 		}
 		return (bool) $this->matchesCount;
 	}
+
+    /**
+     *
+     */
+    public function execute($matchAll=false)
+    {
+        return ($matchAll)
+            ? $this->matchAll()
+            : $this->match();
+    }
 	
 	/**
 	 * 

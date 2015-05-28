@@ -1,9 +1,6 @@
 <?php
 namespace Gbili\Miner\Blueprint\Action\Extract\Method;
 
-use Gbili\Miner\Blueprint\Action\ClassMethodLoader;
-use Gbili\Out\Out;
-
 /**
  * 
  * @author gui
@@ -18,17 +15,21 @@ class Wrapper
 	const INTERCEPT_TYPE_TOGETHER = 2;
 	const INTERCEPT_TYPE_ONEBYONE = 3;
 
+    protected $interceptTypes = array(
+        self::INTERCEPT_TYPE_TOGETHER => 'interceptGroupsTogether', 
+        self::INTERCEPT_TYPE_ONEBYONE => 'interceptGroupsOneByOne',
+    );
+
 	/**
 	 * The instance that contains all methods
 	 * 
-	 * @var unknown_type
+	 * @var \Zend\ServiceManager\ServiceManager 
 	 */
-	private $methodClassInstance;
+	private $serviceManager;
 	
 	/**
 	 * 
-	 * 
-	 * @var unknown_type
+	 * @var array 
 	 */
 	private $interceptTypeToMethodToGroupMap = array();
 	
@@ -36,33 +37,61 @@ class Wrapper
 	 * 
 	 * @param stdClass $methodClassInstance
 	 * @param array $mapping
-	 * @return unknown_type
+	 * @return void
 	 */
-	public function __construct($methodClassInstance, array $mapping)
+	public function __construct(\Zend\ServiceManager\ServiceManager $sm, array $mapping)
 	{
-		////Out::l2('created a method wrapper' . "\n");
+        $this->serviceManager = $sm;
 		if (empty($mapping)) {
 			throw new Wrapper\Exception('the mapping passed is empty');
 		}
 		//reformat mapping, note that is being passed ordered by intercept type ASC, methodName ASC, regexGroup ASC
 		foreach ($mapping as $groupMap) {
-			$interceptType = (integer) $groupMap['interceptType'];
-			if ($interceptType !== self::INTERCEPT_TYPE_TOGETHER && $interceptType !== self::INTERCEPT_TYPE_ONEBYONE) {
-				throw new Wrapper\Exception('intercept type not supported');
-			}
-			if (!ClassMethodLoader::methodExists(get_class($methodClassInstance), $groupMap['methodName'])) {
-				throw new Wrapper\Exception('the method does not exist in method class, methodName : ' . $groupMap['methodName'] . ', methodClassInstance : ' . print_r($methodClassInstance, true));
-			}
-			if (!isset($this->interceptTypeToMethodToGroupMap[$interceptType])) {
-				$this->interceptTypeToMethodToGroupMap[$interceptType] = array();
-			}
-			if (!isset($this->interceptTypeToMethodToGroupMap[$interceptType][$groupMap['methodName']])) {
-				$this->interceptTypeToMethodToGroupMap[$interceptType][$groupMap['methodName']] = array();
-			}
-			$this->interceptTypeToMethodToGroupMap[$interceptType][$groupMap['methodName']][] = $groupMap['regexGroup'];
+            $this->addToInterceptTypeToMethodGroupMap($groupMap['interceptType'], $groupMap['serviceIdentifier'], $groupMap['methodName'], $groupMap['regexGroup']);
 		}
-		$this->methodClassInstance = $methodClassInstance;
 	}
+
+    protected function addToInterceptTypeToMethodGroupMap($interceptType, $serviceIdentifier, $methodName, $regexGroup)
+    {
+        $interceptType = $this->getInterceptTypeOrThrow($interceptType);
+
+        $this->existstsServiceWithMethodOrThrow($serviceIdentifier, $methodName);
+        
+        $this->initInterceptTypeToMethodToGroupMapArray($interceptType, $serviceIdentifier, $methodName);
+        $this->interceptTypeToMethodToGroupMap[$interceptType][$serviceIdentifier][$methodName][] = $regexGroup;
+    }
+
+    protected function initInterceptTypeToMethodToGroupMapArray($interceptType, $serviceIdentifier, $methodName)
+    {
+        if (!isset($this->interceptTypeToMethodToGroupMap[$interceptType])) {
+            $this->interceptTypeToMethodToGroupMap[$interceptType] = array();
+        }
+        if (!isset($this->interceptTypeToMethodToGroupMap[$interceptType][$serviceIdentifier])) {
+            $this->interceptTypeToMethodToGroupMap[$interceptType][$serviceIdentifier] = array();
+        }
+        if (!isset($this->interceptTypeToMethodToGroupMap[$interceptType][$serviceIdentifier][$methodName])) {
+            $this->interceptTypeToMethodToGroupMap[$interceptType][$serviceIdentifier][$methodName] = array();
+        }
+    }
+
+    protected function existstsServiceWithMethodOrThrow($serviceIdentifier, $methodName)
+    {
+        if (!$this->serviceManager->has($serviceIdentifier)) {
+            throw new Wrapper\Exception('Service does not exist. Identifier: '. $serviceIdentifier);
+        }
+        if (!method_exists($this->serviceManager->get($serviceIdentifier), $methodName)) {
+            throw new Wrapper\Exception('the method does not exist in service: '.$serviceIdentifier.', methodName : ' . $methodName);
+        }
+    }
+
+    protected function getInterceptTypeOrThrow($interceptType)
+    {
+        $interceptType = (integer) $interceptType;
+        if (!in_array($interceptType, array_keys($this->interceptTypes))) {
+            throw new Wrapper\Exception('intercept type not supported');
+        }
+        return $interceptType;
+    }
 	
 	/**
 	 * 
@@ -71,25 +100,21 @@ class Wrapper
 	 */
 	public function intercept(array $resultsArray)
 	{
-		////Out::l2("MethodMethod is intercepting results : \n" . print_r($resultsArray, true));
-		//intercept the groups together and change the resultsArray to a single element array
-		if (isset($this->interceptTypeToMethodToGroupMap[self::INTERCEPT_TYPE_TOGETHER])) {
-			////Out::l2("intercepting groups together : \n" . print_r($this->interceptTypeToMethodToGroupMap[self::INTERCEPT_TYPE_TOGETHER], true));
-			foreach ($this->interceptTypeToMethodToGroupMap[self::INTERCEPT_TYPE_TOGETHER] as $methodName => $groups) {
-				$resultsArray = $this->interceptGroupsTogether($groups, $resultsArray, $methodName);
-			}
-		}
-		//results array has been modified by interceptGroupsTogether, so it may have less results
-		if (isset($this->interceptTypeToMethodToGroupMap[self::INTERCEPT_TYPE_ONEBYONE])) {
-			////Out::l2("intercepting groups one by one : \n" . print_r($this->interceptTypeToMethodToGroupMap[self::INTERCEPT_TYPE_ONEBYONE], true));
-			foreach ($this->interceptTypeToMethodToGroupMap[self::INTERCEPT_TYPE_ONEBYONE] as $methodName => $group) {
-				$resultsArray = $this->interceptGroupsOneByOne($group, $resultsArray, $methodName);
-			}
-		}
+        foreach ($this->interceptTypes as $interceptType => $interceptMethod) {
+            if (!isset($this->interceptTypeToMethodToGroupMap[$interceptType])) {
+                continue;
+            }
+            foreach ($this->interceptTypeToMethodToGroupMap[$interceptType] as $serviceIdentifier => $methodToGroupsOrGroup) {
+                foreach ($methodToGroupsOrGroup as $methodName => $groupsOrGroup) {
+                    $resultsArray = $this->{$interceptMethod}($groupsOrGroup, $resultsArray, $serviceIdentifier, $methodName);
+                }
+            }
+        }
 		return $resultsArray;
 	}
 	
 	/**
+     * intercept the groups together and change the resultsArray to a single element array
 	 * This function returns an array that combines
 	 * the elements of resultsArray that have the same
 	 * keys than the values in groups. It will unset
@@ -102,7 +127,7 @@ class Wrapper
 	 * @param unknown_type $resultsArray
 	 * @return unknown_type
 	 */
-	public function interceptGroupsTogether(array $groups, array $resultsArray, $methodName)
+	public function interceptGroupsTogether(array $groups, array $resultsArray, $serviceIdentifier, $methodName)
 	{
 		$concernedResults = array();
 		$lowestGroup = null;
@@ -120,7 +145,7 @@ class Wrapper
 				unset($resultsArray[$group]);
 			}
 		}
-		$resultsArray[$lowestGroup] = $this->methodClassInstance->$methodName($concernedResults);
+		$resultsArray[$lowestGroup] = $this->serviceManager->get($serviceIdentifier)->{$methodName}($concernedResults);
 		return $resultsArray;
 	}
 	
@@ -134,14 +159,14 @@ class Wrapper
 	 * @param unknown_type $methodName
 	 * @return array
 	 */
-	public function interceptGroupsOneByOne(array $groups, array $resultsArray, $methodName)
+	public function interceptGroupsOneByOne(array $groups, array $resultsArray, $serviceIdentifier, $methodName)
 	{
+        $service = $this->serviceManager->get($serviceIdentifier);
 		foreach ($groups as $group) {
 			if (!isset($resultsArray[$group])) {
 				throw new Wrapper\Exception('One group is asked to be intercepted but it is not present in resultsArray anymore (or has never been). Remember that resultsArray looses all concerned groups that are not the lowest in a INTERCEPT_TYPE_TOGETHER call');
 			}
-			////Out::l2("intercepting result with group : $group, and value : " . print_r($resultsArray[$group], true) . "\n");
-			$resultsArray[$group] = $this->methodClassInstance->$methodName(array($resultsArray[$group]));//wrap the result in an array
+			$resultsArray[$group] = $service->{$methodName}(array($resultsArray[$group]));//wrap the result in an array
 		}
 		return $resultsArray;
 	}

@@ -18,7 +18,9 @@ class LexerListenerAggregate implements ListenerAggregateInterface
      * 
      * @var \Gbili\Miner\Lexer\AbstractLexer
      */
-    protected $lexer = null;
+    protected $lexer;
+
+    protected $listenerAggregateAttacher;
     
     /**
      * 
@@ -27,6 +29,7 @@ class LexerListenerAggregate implements ListenerAggregateInterface
     public function __construct(AbstractLexer $lexer)
     {
         $this->lexer = $lexer;
+        $this->listenerAggregateAttacher = new \Gbili\ListenerAggregateAttacher;
     }
     
     /**
@@ -35,18 +38,12 @@ class LexerListenerAggregate implements ListenerAggregateInterface
      */
 	public function attach(EventManagerInterface $events)
 	{
-	    $eventAwareClassIdentifiers = $events->getIdentifiers();
-        $eventsAwareClass = end($eventAwareClassIdentifiers);
-        switch ($eventsAwareClass) {
-            case 'Gbili\Miner\Application\Application':
-        	    $this->listeners[] = $events->attach('manageExecutedAction.hasFinalResults', array($this, 'manageData'));
-        	    break;
-            case 'Gbili\Miner\Persistance':
-        	    $this->listeners[] = $events->attach('addPersistableInstance.post', array($this, 'setPopulableInstance'));
-                break;
-            default: 
-                throw new Exception('EventManager not supported by:' . __CLASS__ . ' instance of :' . $eventsAwareClass . ' not expected');
-                break;
+        $listeners = [];
+        $listeners['Gbili\Miner\Application\Application'] = ['manageExecutedAction.hasFinalResults', [$this, 'manageData']];
+        $listeners['Gbili\Miner\Persistance'] = ['addPersistableInstance.post', [$this, 'setPopulableInstance']];
+
+        foreach ($this->listenerAggregateAttacher->attachListenersByEventsIdentifier($events, $listeners) as $listener) {
+            $this->listeners[] = $listener;
         }
 	}
 	

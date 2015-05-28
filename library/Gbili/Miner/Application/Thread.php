@@ -3,8 +3,7 @@ namespace Gbili\Miner\Application;
 
 use Gbili\Miner\Blueprint\Action\AbstractAction;
 use Gbili\Miner\Application\Application;
-use Gbili\Miner\Blueprint;
-use Gbili\Miner\AttachableListenersInterface;
+use Gbili\Miner\HasAttachableListenersInterface;
 
 use Zend\EventManager\EventManagerAwareTrait;
 use Zend\EventManager\EventManagerAwareInterface;
@@ -16,7 +15,7 @@ use Zend\EventManager\EventManagerAwareInterface;
  * @author gui
  *
  */
-class Thread implements EventManagerAwareInterface, AttachableListenersInterface
+class Thread implements EventManagerAwareInterface, HasAttachableListenersInterface
 {
     use EventManagerAwareTrait;
     
@@ -42,13 +41,9 @@ class Thread implements EventManagerAwareInterface, AttachableListenersInterface
 	 * 
 	 * @return void
 	 */
-	public function __construct(Blueprint $blueprint)
+	public function __construct(\Gbili\Miner\Blueprint\Action\RootActionInterface $rootAction)
 	{ 
-		$this->action    = $blueprint->getRoot();
-		
-        if (isset($config['limited_results_action_id'])) {
-            $this->defaultListeners[] = 'ResultsPerActionGaugeListenerAggregate';
-        }
+		$this->action = $rootAction;
 	}
 	
     /**
@@ -58,6 +53,18 @@ class Thread implements EventManagerAwareInterface, AttachableListenersInterface
     {
         return $this->defaultListeners;
     }
+
+    public function addListener($listener)
+    {
+        if (!$this->hasListener($listener)) {
+            $this->defaultListeners[] = $listener;
+        }
+    }
+
+    public function hasListener($listener)
+    {
+        return in_array($listener, $this->defaultListeners);
+    }  
     
 	/**
 	 * 
@@ -87,10 +94,12 @@ class Thread implements EventManagerAwareInterface, AttachableListenersInterface
 	/**
 	 * 
 	 */
-	public function retakeFlowFromParent()
+	public function retakeFlowFromParent($clear=true)
 	{
         $action = $this->getAction();
-        $action->clear();
+        if ($clear) { //needed for testing
+            $action->clear();
+        }
         if ($action->isRoot()) {
 	        $this->getEventManager()->trigger(__FUNCTION__ . '.rootParentIsRoot', array('thread', $this));
         } else {

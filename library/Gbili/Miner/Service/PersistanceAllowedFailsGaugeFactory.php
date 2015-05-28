@@ -22,7 +22,6 @@ class PersistanceAllowedFailsGaugeFactory implements FactoryInterface
         }
         
 	    $p = new PersistanceAllowedFailsGauge($config['persistance_allowed_fails_max_count']);
-	    echo 'got an object';
 	    return $p;
     }
 }

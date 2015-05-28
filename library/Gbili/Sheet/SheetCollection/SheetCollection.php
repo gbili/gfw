@@ -1,8 +1,6 @@
 <?php
 namespace Gbili\Sheet\SheetCollection;
 
-use Zend\EventManager\EventManager;
-use Zend\EventManager\EventManagerInterface;
 use Gbili\Stdlib\Collection;
 use Gbili\Stdlib\Matrix;
 use Gbili\Line\LineCollection\LineCollection;
@@ -14,6 +12,13 @@ use Gbili\Sheet\SheetCollection\SheetCollectionAwareInterface;
 
 class SheetCollection extends Collection
 {
+    use \Zend\EventManager\ProvidesEvents;
+
+    /**
+     * @var array
+     */
+    protected $eventIdentifier;
+
     /**
      * 
      * @var \Gbili\Sheet\SheetCollection\ConfigInterface
@@ -31,12 +36,6 @@ class SheetCollection extends Collection
      * @var number
      */
     protected $matrixColumnCount   = 1;
-    
-    /**
-     * 
-     * @var \Zend\EventManager\EventManagerInterface
-     */
-    protected $events;
     
     /**
      * 
@@ -63,6 +62,11 @@ class SheetCollection extends Collection
     protected $sampleSheet    = null;
     
     
+    public function __construct()
+    { 
+        $this->eventIdentifier = array(__CLASS__, get_called_class());
+    }
+
     /**
      *
      * @param LineCollection $lineCollection
@@ -104,29 +108,6 @@ class SheetCollection extends Collection
             throw new Exception("No LineCollection has been set for this SheetCollection");
         }
         return $this->lineCollection;
-    }
-    
-    /**
-     * 
-     * @return \Zend\EventManager\EventManagerInterface
-     */
-    public function getEventManager()
-    {
-        if (null === $this->events) {
-            $this->setEventManager(new EventManager(
-                array(__CLASS__, get_called_class())
-            ));
-        }
-        return $this->events;
-    }
-    
-    /**
-     * 
-     * @param EventManagerInterface $events
-     */
-    public function setEventManager(EventManagerInterface $events)
-    {
-        $this->events = $events;
     }
     
     /**

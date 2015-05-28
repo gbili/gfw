@@ -1,5 +1,5 @@
 <?php
-namespace Gbili\Miner\Blueprint\Db;
+namespace Gbili\Miner\Blueprint\DbReqBlueprint\Db;
 
 use Gbili\Db\Req\AbstractReq,
     Gbili\Url\Authority\Host;
@@ -27,15 +27,10 @@ implements DbInterface
 	public function getBlueprintInfo(Host $host)
 	{
 		return $this->getResultSet("SELECT b.bId AS bId,
-									   b.newInstanceGeneratingPointActionId AS newInstanceGeneratingPointActionId,
-									   cm.path AS path,
-									   cm.pathType AS pathType,
-									   cm.classType AS classType
+									   b.newInstanceGeneratingPointActionId AS newInstanceGeneratingPointActionId
 									FROM Blueprint AS b 
-										LEFT JOIN Blueprint_CMPaths AS cm 
-											ON (b.bId = cm.bId)
 									WHERE b.host = :host",
-								  array(':host' => $host->toString()));
+                                    array(':host' => $host->toString()));
 	}
 	
 	/**
@@ -78,7 +73,7 @@ implements DbInterface
 					WHERE b.bActionId = :actionId";
 		return $this->getResultSet($sql, array(':actionId' => $actionId));
 	}
-	
+
 	/**
 	 * Returns all the rows in tha Actions table
 	 * where the host is the same as specified
@@ -104,30 +99,32 @@ implements DbInterface
 					ORDER BY a.execRank ASC";
 		return $this->getResultSet($sql, array(':host' => $host->toString()));
 	}
-	
+
 	/**
 	 * 
 	 * @param unknown_type $actionId
 	 * @return unknown_type
 	 */
-	public function getActionCallbackMethodName($actionId)
+	public function getActionCallable($actionId)
 	{
-		return $this->getResultSet("SELECT c.methodName AS methodName
-										FROM BAction_CallbackMethod AS c 
-										WHERE c.bActionId = :bActionId",
+		return $this->getResultSet("SELECT c.methodName AS methodName,
+                                           c.serviceIdentifier AS serviceIdentifier
+										FROM BAction_r_Callable AS b 
+                                           INNER JOIN Callable AS c ON b.callableId = c.callableId
+                                        WHERE b.bActionId = :bActionId",
 									array(':bActionId' => $actionId));
 	}
-	
+
 	/**
 	 * 
 	 * @param unknown_type $actionId
 	 * @return unknown_type
 	 */
-	public function getActionCallbackParamsToGroupMapping($actionId)
-	{	
+	public function getActionCallableParamsToGroupMapping($actionId)
+	{
 		$sql = "SELECT d.regexGroup AS regexGroup,
 					   d.paramNum AS paramNum
-					FROM BAction_RegexGroup_r_CallbackMethod_ParamNum AS d 
+					FROM BAction_RegexGroup_r_Callable_ParamNum AS d 
 					WHERE d.bActionId = :bActionId 
 					ORDER BY d.paramNum ASC";
 		return $this->getResultSet($sql, array(':bActionId' => $actionId));
@@ -136,19 +133,19 @@ implements DbInterface
 	/**
 	 * 
 	 * @param unknown_type $actionId
-	 * @return unknown_type
+	 * @return array
 	 */
-	public function getActionGroupToMethodNameAndInterceptType($actionId)
+	public function getActionGroupToCallableAndInterceptType($actionId)
 	{
-		$sql = "SELECT m.name AS methodName,
+		$sql = "SELECT c.methodName AS methodName,
+                       c.serviceIdentifier AS serviceIdentifier,
 					   b.regexGroup AS regexGroup,
 					   b.interceptType AS interceptType
-					FROM Blueprint_MethodMethod as m
-						LEFT JOIN BAction_RegexGroup_r_MethodMethod as b
-							ON (m.methodId = b.methodId)
+					FROM Callable as c
+						LEFT JOIN BAction_RegexGroup_r_Callable as b
+							ON (c.callableId = b.callableId)
 					WHERE b.bActionId = :actionId
-					ORDER BY b.interceptType ASC, m.name ASC, b.regexGroup ASC";
+					ORDER BY b.interceptType ASC, c.serviceIdentifier ASC, c.methodName ASC, b.regexGroup ASC";
 		return $this->getResultSet($sql, array(':actionId' => $actionId));
-		
 	}
 }

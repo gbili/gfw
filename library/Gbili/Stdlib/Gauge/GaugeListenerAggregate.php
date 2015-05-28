@@ -19,6 +19,8 @@ class GaugeListenerAggregate implements ListenerAggregateInterface
     
     protected $gauge;
     
+    protected $listenerAggregateAttacher;
+
     /**
      * 
      * @param number $max
@@ -26,6 +28,7 @@ class GaugeListenerAggregate implements ListenerAggregateInterface
     public function __construct(Gauge $gauge)
     {
         $this->gauge = $gauge;
+        $this->listenerAggregateAttacher = new \Gbili\ListenerAggregateAttacher;
     }
     
     /**
@@ -40,7 +43,7 @@ class GaugeListenerAggregate implements ListenerAggregateInterface
         if (!isset($this->attachements[$eventsIndentifier])) {
             $this->attachements[$eventsIndentifier] = array();
         }
-        $this->attachements[$eventsIndentifier][] = array($event, $callbackName, $priority);
+        $this->attachements[$eventsIndentifier][] = array($event, array($this->gauge, $callbackName), $priority);
     }
 
     /**
@@ -49,16 +52,8 @@ class GaugeListenerAggregate implements ListenerAggregateInterface
      */
     public function attach(EventManagerInterface $events)
     {
-        $eventsAwareClass = $events->getIdentifiers();
-        $listenToEventsIdentifier = end($eventsAwareClass);
-        $possibleEventsIndentifiers = array_keys($this->attachements);
-        if (!in_array($listenToEventsIdentifier, $possibleEventsIndentifiers)) {
-            throw new \Exception('The event manager must pertain to one of : ' . print_r($possibleEventsIndentifiers, true) . ', currently it pertains to :' . print_r($eventsAwareClass, true));
-        }
-        
-        foreach ($this->attachements[$listenToEventsIdentifier] as $attachement) {
-            list($event, $callbackName, $priority) = $attachement;
-    	    $this->listeners[] = $events->attach($event, array($this->gauge, $callbackName), $priority);
+        foreach ($this->listenerAggregateAttacher->attachListenersByEventsIdentifier($events, $this->attachements) as $listener) {
+            $this->listeners[] = $listener;
         }
     }
 }

@@ -1,24 +1,16 @@
 <?php
 namespace Gbili\Miner\Application;
 
-use Gbili\Miner\Service\ServiceManagerConfig;
-
-use Zend\ServiceManager\ServiceManager;
-use Zend\Stdlib\CallbackHandler;
-use Zend\EventManager\EventManagerAwareTrait;
-use Zend\EventManager\EventManagerAwareInterface;
-
-use Gbili\Miner\AttachableListenersInterface;
-use Gbili\Miner\Application\FlowEvaluator;
-
 /**
  * 
  * @author g
  *
  */
-class Application implements EventManagerAwareInterface, AttachableListenersInterface
+class Application 
+implements \Zend\EventManager\EventManagerAwareInterface,
+           \Gbili\Miner\HasAttachableListenersInterface
 {
-    use EventManagerAwareTrait;
+    use \Zend\EventManager\EventManagerAwareTrait;
     
     /**
      * 
@@ -29,28 +21,23 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
         'ExecutionAllowedFailsGaugeListenerAggregate', //manageFail.normalAction
         'FailLoggerListenerAggregate', //executeAction.fail
     );
+
+    //TODO add a method that should handle gauge reachedLimit 
     
     /**
      * 
-     * @var \Gbili\Miner\Application\Thread
+     * @var FlowEvaluator
      */
-    protected $thread;
+    protected $flowEvaluator;
     
     /**
      * 
-     * @var \Gbili\Miner\Application\FlowEvaluator
+     * @param FlowEvaluator $thread
+     * @param array $thread
      */
-    protected $flowEvaluator = null;
-    
-    
-    /**
-     * 
-     * @param Thread $thread
-     */
-    public function __construct(Thread $thread, array $config)
+    public function __construct(FlowEvaluator $flowEvaluator)
     {
-        $this->thread = $thread;
-        $this->flowEvaluator = new FlowEvaluator($this->thread);
+        $this->flowEvaluator = $flowEvaluator;
     }
     
     /**
@@ -75,25 +62,40 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
     public static function init($configuration = array())
     {
         $smConfig       = isset($configuration['service_manager']) ? $configuration['service_manager'] : array();
-        $listeners      = isset($configuration['listeners']) ? $configuration['listeners'] : array();
-        $serviceManager = new ServiceManager(new ServiceManagerConfig($smConfig));
+        $appListeners      = isset($configuration['application']['listeners']) ? $configuration['application']['listeners'] : array();
+        $serviceManager = new \Zend\ServiceManager\ServiceManager(new \Gbili\Miner\Service\ServiceManagerConfig($smConfig));
         $serviceManager->setService('ApplicationConfig', $configuration);
         
         // By calling engine and flow handler we make all services available
-        
-        $application = $serviceManager->get('Application')->addListeners($listeners);
+
+        $application = $serviceManager->get('Application');
+        $application->addListeners($appListeners);
         //$serviceManager->get('Persistance');
         
         // Then we can easily attach all listeners without fearing circular
         // dependencies
         
         //The ListenersAttacher has attachables from a ServiceManagerConfig initializer
-        //If any retrieved service implements AttachableListenersInterface, the initializer
+        //If any retrieved service implements HasAttachableListenersInterface, the initializer
         //will call ListenersAttacher::regsiterAttachable($myService) 
         //Every regsiteredAttachable will be used to call ListenersAttacher::attachListenersToAttachable($myService) 
         //Then we retrieve all the listeners from every myService, and attach them to the service's event manager
         $serviceManager->get('ListenersAttacher')->attach();
         return $application;
+    }
+
+    public function setServiceManager(\Zend\ServiceManager\ServiceManager $serviceManager)
+    {
+        $this->sm = $serviceManager;
+        return $this;
+    }
+
+    public function getServiceManager()
+    {
+        if ($this->sm === null) {
+            throw new \Exception('ServiceManager not set');
+        }
+        return $this->sm;
     }
     
 	/**
@@ -102,7 +104,9 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
 	 */
 	public function addListeners($listeners = array())
 	{
-	    $this->defaultListeners = array_unique(array_merge($this->defaultListeners, $listeners));
+        if (!empty($listeners)) {
+            $this->defaultListeners = array_merge($this->defaultListeners, $listeners);
+        }
 	    return $this;
 	}
     
@@ -112,16 +116,6 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
     public function getListeners()
     {
         return $this->defaultListeners;
-    }
-
-    /**
-     * 
-     * @throws Exception
-     * @return \Gbili\Miner\Application\Thread
-     */
-    public function getThread()
-    {
-        return $this->thread;
     }
     
     /**
@@ -133,26 +127,30 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
     {
         do {
             $this->executeAction();
-        } while ($this->flowEvaluator->evaluate() || $this->manageFail());
+        } while (
+            ($foundExecutableAction = $this->flowEvaluator->evaluate()) 
+            || $this->manageNotFoundExecutableAction()
+        );
+        $this->triggerEvent('enOfScript');
     }
     
     /**
      * .pre 
      * .success monitor how many actions succeed
-     * .fail monitor all actions: normal and optional that fail.
+     * .fail monitor all actions that fail: normal and optional.
      *     If you want to monitor the number of normal
      *     actions that fail (not optional) and controll whether
      *     the the application should attempt to recover and 
-     *     continue, listen to manageFail.normalAction
+     *     continue, listen to manageNotFoundExecutableAction.normalAction
+     * .post monitor all executed actions regardless of fail or success
      *     
      * @throws Exception
-     * @return multitype:boolean|\Gbili\Miner\Blueprint\Action\Application\Flow\PlaceNextInterface
+     * @return void 
      */
     protected function executeAction()
     {
         $this->triggerEvent(    __FUNCTION__ . '.pre');
-
-        if ($this->getThread()->getAction()->execute()) {
+        if ($this->flowEvaluator->executeActionInFlow()) {
             $this->triggerEvent(__FUNCTION__ . '.success');
             $this->manageExecutedAction();
         } else {
@@ -166,7 +164,8 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
      */
     protected function manageExecutedAction()
     {
-        $action = $this->getThread()->getAction();
+        $action = $this->flowEvaluator->getActionInFlow();
+        $this->triggerEvent(__FUNCTION__ . '.executed');
         if ($action->hasFinalResults()) {
             $params = array('results' => $action->spit());
             $this->triggerEvent(__FUNCTION__ . '.hasFinalResults', $params);
@@ -185,10 +184,10 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
      * @throws Exception
      * @return true continue wile loop
      */
-    public function manageFail()
+    public function manageNotFoundExecutableAction()
     {
         $responses = $this->triggerEvent(__FUNCTION__ . '.normalAction');
-        return !$responses->stopped() && $this->flowEvaluator->attemptFailRecovery();
+        return !$responses->stopped() && $this->flowEvaluator->attemptResume();
     }
     
     /**
@@ -207,8 +206,8 @@ class Application implements EventManagerAwareInterface, AttachableListenersInte
      */
     protected function getParams(array $append = array())
     {
-        $thread   = $this->getThread();
-        $action   = $thread->getAction();
+        $thread   = $this->flowEvaluator->getThread();
+        $action   = $this->flowEvaluator->getActionInFlow();
         $actionId = $action->getId();
         $params = compact('thread', 'action', 'actionId');
         

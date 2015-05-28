@@ -186,4 +186,12 @@ class Wrapper
     {
         return $this->createChild('Extract', $parent);
     }
+
+    /**
+     * Proxy for blueprint save
+     */
+    public function save()
+    {
+        return $this->getBlueprint()->save();
+    }
 }

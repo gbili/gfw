@@ -2,17 +2,17 @@
 namespace Gbili\Miner\Gauge;
 
 use Gbili\Stdlib\Gauge\Events\EventsMaxGauge;
-use Gbili\Miner\AttachableListenersInterface;
+use Gbili\Miner\HasAttachableListenersInterface;
 
 /**
  * 
  * @author g
  *
  */
-class ResultsPerActionGauge extends EventsMaxGauge implements AttachableListenersInterface
+class ResultsPerActionGauge extends EventsMaxGauge implements HasAttachableListenersInterface
 {   
-    protected $defaultListeners = array(
-        'ApplicationListenerAggregate'
+    protected $defaultListeners = array( // events available : add.pre, add.post, reachedLimit
+//        'ApplicationListenerAggregate'
     );
     
     /**

@@ -11,7 +11,7 @@ namespace Gbili\Miner;
  * @author g
  *
  */
-interface AttachableListenersInterface
+interface HasAttachableListenersInterface
 {
     public function getListeners();
 }
