@@ -12,6 +12,13 @@ class CircularCollection extends Collection
      * @var number
      */
     protected $firstElementHasBeenNexted = false;
+
+    /**
+     * The last two calls to getNext must have returned
+     * the collection last element and then the first
+     * element for this to be true
+     */
+    protected $lastCallToGetNextChangedLap = false;
     
     /**
      * How many times the circular collection reached
@@ -22,13 +29,6 @@ class CircularCollection extends Collection
      * @var number
      */
     protected $lap = 0;
-    
-    /**
-     * We want to be able to tell if the call to
-     * getNext() made us change lap or not.
-     * @var unknown_type
-     */
-    protected $lastCallToGetNextChangedLap = false;
     
     /**
      * The first lap is 0
@@ -45,7 +45,7 @@ class CircularCollection extends Collection
      * no elements have been returned yet.
      * So the first time getNext is called,
      * it will return the first element and
-     * not the second as expected...
+     * not the second element as expected...
      * 
      * Advance pointer and return next,
      * that it returns only the value
@@ -58,15 +58,16 @@ class CircularCollection extends Collection
             $this->firstElementHasBeenNexted = true;
             return $this->getCurrent();
         }
-        
+
+        $this->lastCallToGetNextChangedLap = false;
+
         $this->next();
-        
         if (!$this->valid()) {
             $this->nextLap();
-        } else {
-            $this->lastCallToGetNextChangedLap = false;
+            //on this lap change, get next returns first element
+            $this->firstElementHasBeenNexted = true;
         }
-        
+
         return $this->getCurrent();
     }
     
@@ -92,6 +93,8 @@ class CircularCollection extends Collection
     }
 
     /**
+     * Set the collection as in construction, 
+     * but increase the lap
      * 
      * @throws Exception
      */
@@ -101,18 +104,18 @@ class CircularCollection extends Collection
             throw new Exception('Cannot advance lap on an empty collection');
         }
         $lapBeforeRewind = $this->lap;
-        $this->lastCallToGetNextChangedLap = true;
         $this->rewind();
+        $this->lastCallToGetNextChangedLap = true;
         return $this->lap = ++$lapBeforeRewind;
     }
     
     /**
-     * 
+     * @alias lastCallToGetNextChangedLap
      * @return boolean
      */
     public function hasChangedLap()
     {
-        return $this->lastCallToGetNextChangedLap() && !$this->firstElementHasBeenNexted();
+        return $this->lastCallToGetNextChangedLap();
     }
     
     /**
@@ -120,7 +123,7 @@ class CircularCollection extends Collection
      */
     public function rewind()
     {
-        $this->lap                       = 0;
+        $this->lap = 0;
         $this->firstElementHasBeenNexted = false;
         return parent::rewind();
     }

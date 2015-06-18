@@ -1,13 +1,8 @@
 <?php
 namespace Gbili\Stdlib;
 
-use ArrayIterator;
-use Gbili\Stdlib\ThrowIf\MagicThrow;
-use Gbili\Stdlib\ToStringInterface;
-
-class Collection extends ArrayIterator implements ToStringInterface
+class Collection extends \ArrayIterator implements \Gbili\Stdlib\ToStringInterface
 {
-    
     public function __construct(array $array = array())
     {
         parent::__construct($array);
@@ -189,7 +184,7 @@ class Collection extends ArrayIterator implements ToStringInterface
         }
         $thisArray = iterator_to_array($this, false);
         return array_reduce($thisArray, function ($str, $element) {
-            return $str .= ($element instanceof ToStringInterface)? $element->toString() : (string) $element;
+            return $str .= ($element instanceof \Gbili\Stdlib\ToStringInterface)? $element->toString() : (string) $element;
         }, '');
     }
 
