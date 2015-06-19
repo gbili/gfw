@@ -1,20 +1,6 @@
 <?php
 namespace Gbili\Miner\Lexer;
 
-use Gbili\Time\Length\StrToInt as TimeLengthStrToInt;
-use Gbili\Miner\Lexer\AbstractLexer;
-use Gbili\Miner\Lexer\Exception;
-use Gbili\Out\Out;
-use Gbili\Db\ActiveRecord\ActiveRecordInterface;
-use Gbili\Vid\Savable          as VidSavable;
-use Gbili\Vid\Tag\Savable      as TagSavable;
-use Gbili\Vid\Title\Savable    as TitleSavable;
-use Gbili\Vid\Image\Savable    as ImageSavable;
-use Gbili\Vid\Category\Savable as CategorySavable;
-use Gbili\Time\AgoToDate;
-use Gbili\Url\Url;
-use Gbili\Source\Savable       as SourceSavable;
-
 /**
  * This will populate the video entites
  * with the data in the way specified in populateInstance();

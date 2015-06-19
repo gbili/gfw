@@ -73,7 +73,7 @@ implements BlueprintInterface
         }
 		$this->host = $host;
 
-	    $this->setServiceManager($sm);
+	    parent::__construct($sm); 
 	}
 
     /**

@@ -5,11 +5,6 @@ class ArrayBlueprint
 extends AbstractBlueprint
 implements BlueprintInterface
 {
-    public function __construct(\Zend\ServiceManager\ServiceManager $sm)
-    {
-        $this->setServiceManager($sm);
-    }
-
     public function init()
     {
         $sm = $this->getServiceManager();
@@ -46,6 +41,16 @@ implements BlueprintInterface
         }
     }
 
+    /**
+     * match values of $keepKeys and keys of $keepValues and for every match
+     * return key => value pairs where key is key of $keepKeys and value is
+     * value of $keepValues
+     *
+     * Ex: given $keepKeys = ['a' => (1), 2 => 'some', 'z' => ('10')]
+     *         $keepValues = [(1) => 'theVal', ('10') => 'otherVal', 'sd' => 'both']
+     *                return ['a' => 'theVal', 'z' => 'otherVal']
+     *     () designate matches
+     */
     public function arrayPuzzle(array $keepKeys, array $keepValues)
     {
         $keep = array();
