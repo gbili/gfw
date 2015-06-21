@@ -17,7 +17,7 @@ class SheetCollection extends Collection
     /**
      * @var array
      */
-    protected $eventIdentifier;
+    protected $eventIdentifiers;
 
     /**
      * 
@@ -64,7 +64,7 @@ class SheetCollection extends Collection
     
     public function __construct()
     { 
-        $this->eventIdentifier = array(__CLASS__, get_called_class());
+        $this->eventIdentifiers = array(__CLASS__, get_called_class());
     }
 
     /**

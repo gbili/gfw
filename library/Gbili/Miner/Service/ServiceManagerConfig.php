@@ -1,14 +1,7 @@
 <?php
 namespace Gbili\Miner\Service;
 
-use Gbili\Miner\HasAttachableListenersInterface;
-use Zend\ServiceManager\ConfigInterface;
-use Zend\ServiceManager\ServiceManager;
-use Zend\EventManager\EventManagerAwareInterface;
-use Zend\ServiceManager\ServiceManagerAwareInterface;
-use Zend\ServiceManager\ServiceLocatorAwareInterface;
-
-class ServiceManagerConfig implements ConfigInterface
+class ServiceManagerConfig implements \Zend\ServiceManager\ConfigInterface
 {
     /**
      * Services that can be instantiated without factories
@@ -132,10 +125,10 @@ class ServiceManagerConfig implements ConfigInterface
      * service manager, also adds an initializer to inject ServiceManagerAware
      * and ServiceLocatorAware classes with the service manager.
      *
-     * @param  ServiceManager $serviceManager
+     * @param  \Zend\ServiceManager\ServiceManager $serviceManager
      * @return void
      */
-    public function configureServiceManager(ServiceManager $serviceManager)
+    public function configureServiceManager(\Zend\ServiceManager\ServiceManager $serviceManager)
     {
         foreach ($this->invokables as $name => $class) {
             $serviceManager->setInvokableClass($name, $class);
@@ -158,8 +151,8 @@ class ServiceManagerConfig implements ConfigInterface
         }
 
         $serviceManager->addInitializer(function ($instance) use ($serviceManager) {
-            if ($instance instanceof EventManagerAwareInterface) {
-                if ($instance->getEventManager() instanceof EventManagerInterface) {
+            if ($instance instanceof \Zend\EventManager\EventManagerAwareInterface) {
+                if ($instance->getEventManager() instanceof \Zend\EventManager\EventManagerInterface) {
                     $em = $instance->getEventManager();
                     $classParts = explode('\\', get_class($instance));
                     $em->addIdentifiers([end($classParts)]);
@@ -169,19 +162,19 @@ class ServiceManagerConfig implements ConfigInterface
         });
 
         $serviceManager->addInitializer(function ($instance) use ($serviceManager) {
-            if ($instance instanceof ServiceManagerAwareInterface) {
+            if ($instance instanceof \Zend\ServiceManager\ServiceManagerAwareInterface) {
                 $instance->setServiceManager($serviceManager);
             }
         });
         
         $serviceManager->addInitializer(function ($instance) use ($serviceManager) {
-            if ($instance instanceof ServiceLocatorAwareInterface) {
+            if ($instance instanceof \Zend\ServiceManager\ServiceLocatorAwareInterface) {
                 $instance->setServiceLocator($serviceManager);
             }
         });
         
         $serviceManager->addInitializer(function ($instance) use ($serviceManager) {
-            if ($instance instanceof HasAttachableListenersInterface) {
+            if ($instance instanceof \Gbili\Miner\HasAttachableListenersInterface) {
                 $serviceManager->get('ListenersAttacher')->registerAttachable($instance);
             }
         });

@@ -1,31 +1,9 @@
 <?php
 namespace Gbili\Tests\Miner\Application;
 
-
 class ArrayApplicationTest extends \Gbili\Tests\GbiliTestCase
 {
     static public $counter;
-
-    protected function getPDO()
-    {
-        $dSN = "mysql:host=127.0.0.1;dbname=miner";
-        $mysqlUser = 'g';
-        return new \PDO($dSN, $mysqlUser, 'mysql', array(\PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"));
-    }
-
-    protected function initDbReq()
-    {
-        \Gbili\Db\Req\AbstractReq::setAdapter($this->getPDO());
-        \Gbili\Db\Registry::setReqClassNameGenerator(\Gbili\Db\Registry::getDefaultReqClassNameGenerator());
-    }
-
-    protected function installDbTables()
-    {
-        $this->installer = new \Gbili\Miner\Installer;
-        $this->installer->setTableSchemaPath(__DIR__ . '/../../../../../boot/conf/db/tables_dumperengine.sql');
-        $this->installer->deleteExisting(true);
-        $this->installer->install();
-    }
 
     protected function initApp()
     {
@@ -35,7 +13,9 @@ class ArrayApplicationTest extends \Gbili\Tests\GbiliTestCase
         $this->rootSecondChildsFirstChildId = 'get inner pages contents';
 
         $config = array(
-            'blueprint_type'              => 'array',
+            'blueprint'                   => array(
+                'type' => 'array',
+            ),
             'host'                        => 'shopstarbuzz.com',
             'exect_time_limit'            => 86400,
             'execution_allowed_fails_max_count' => 2,
@@ -75,57 +55,59 @@ class ArrayApplicationTest extends \Gbili\Tests\GbiliTestCase
                     ),
                 ),
             ),
-            'action_set' => array(
-                $this->rootActionId => array(
-                    'type' => 'GetContents',
-                    'data' => 'http://somedomain.com',
-                    'description' => 'retrieve the website contents from the web',
+            'action' => array(
+                'rules' => array(
+                    $this->rootActionId => array(
+                        'type' => 'GetContents',
+                        'data' => 'http://somedomain.com',
+                        'description' => 'retrieve the website contents from the web',
+                    ),
+                    $this->rootFirstChildId => array(
+                        'parent' => $this->rootActionId,
+                        'type' => 'Extract',
+                        'data' => '<title>(?P<title>[^<]+)</title>',
+                        'spit_group' => array('title'),
+                        'description' => 'get the title',
+                    ),
+                    $this->rootSecondChildId => array(
+                        'parent' => $this->rootActionId,
+                        'type' => 'Extract',
+                        'match_all' => true,
+                        'data' => '<a.+?href="(?P<link>[^"]+)"',
+                        'spit_group' => array('link'),
+                    ),
+                    $this->rootSecondChildsFirstChildId => array(
+                        'type' => 'GetContents',
+                        'new_instance_generating_point' => true,
+                        'parent' => $this->rootSecondChildId,
+                        'input_group' => 'link',
+                    ),
                 ),
-                $this->rootFirstChildId => array(
-                    'parent' => $this->rootActionId,
-                    'type' => 'Extract',
-                    'data' => '<title>(?P<title>[^<]+)</title>',
-                    'spit_group' => array('title'),
-                    'description' => 'get the title',
-                ),
-                $this->rootSecondChildId => array(
-                    'parent' => $this->rootActionId,
-                    'type' => 'Extract',
-                    'match_all' => true,
-                    'data' => '<a.+?href="(?P<link>[^"]+)"',
-                    'spit_group' => array('link'),
-                ),
-                $this->rootSecondChildsFirstChildId => array(
-                    'type' => 'GetContents',
-                    'new_instance_generating_point' => true,
-                    'parent' => $this->rootSecondChildId,
-                    'input_group' => 'link',
-                ),
-            ),
-            'listeners' => array(
-                /*'application' => array(
-                    array('manageFail.normalAction', 'DumpActionId', 100),
-                    array('executeAction.success', 'ActionSuccess', 100),
-                ),*/
-                //@TODO make sure these listeners get hooked to the right actions
-                //either through shared event manager or with some id checking etc.
-                //Way 1 to add listeners
-                $this->rootActionId => array(
-                    array('execute.post', 'LoggerVarDump', 2),
-                    array('hasMoreResults', 'LoggerVarDump', 2),
-                    array('executeInput', 'LoggerVarDump', 2),
-                ),
-                //Way 2
-                array($this->rootFirstChildId, 'execute.post', 'LoggerVarDump', 2),
-                array($this->rootFirstChildId, 'hasMoreResults', 'LoggerVarDump', 2),
-                array($this->rootFirstChildId, 'executeInput', 'LoggerVarDump', 2),
+                'listeners' => array(
+                    /*'application' => array(
+                        array('manageFail.normalAction', 'DumpActionId', 100),
+                        array('executeAction.success', 'ActionSuccess', 100),
+                    ),*/
+                    //@TODO make sure these listeners get hooked to the right actions
+                    //either through shared event manager or with some id checking etc.
+                    //Way 1 to add listeners
+                    $this->rootActionId => array(
+                        array('execute.post', 'LoggerVarDump', 2),
+                        array('hasMoreResults', 'LoggerVarDump', 2),
+                        array('executeInput', 'LoggerVarDump', 2),
+                    ),
+                    //Way 2
+                    array($this->rootFirstChildId, 'execute.post', 'LoggerVarDump', 2),
+                    array($this->rootFirstChildId, 'hasMoreResults', 'LoggerVarDump', 2),
+                    array($this->rootFirstChildId, 'executeInput', 'LoggerVarDump', 2),
 
-                array($this->rootSecondChildId, 'execute.post', 'LoggerVarDump', 3),
-                array($this->rootSecondChildId, 'hasMoreResults', 'LoggerVarDump', 3),
-                array($this->rootSecondChildId, 'executeInput', 'LoggerVarDump', 3),
-                array($this->rootSecondChildsFirstChildId, 'execute.post', 'LoggerVarDump', 2),
-                array($this->rootSecondChildsFirstChildId, 'hasMoreResults', 'LoggerVarDump', 2),
-                array($this->rootSecondChildsFirstChildId, 'executeInput', 'LoggerVarDump', 2),
+                    array($this->rootSecondChildId, 'execute.post', 'LoggerVarDump', 3),
+                    array($this->rootSecondChildId, 'hasMoreResults', 'LoggerVarDump', 3),
+                    array($this->rootSecondChildId, 'executeInput', 'LoggerVarDump', 3),
+                    array($this->rootSecondChildsFirstChildId, 'execute.post', 'LoggerVarDump', 2),
+                    array($this->rootSecondChildsFirstChildId, 'hasMoreResults', 'LoggerVarDump', 2),
+                    array($this->rootSecondChildsFirstChildId, 'executeInput', 'LoggerVarDump', 2),
+                ),
             ),
         );
         $this->app = \Gbili\Miner\Application\Application::init($config);
@@ -139,14 +121,17 @@ class ArrayApplicationTest extends \Gbili\Tests\GbiliTestCase
      */
     public function setUp()
     {
-        $this->initDbReq();
-        $this->installDbTables();
         $this->initApp();
     }
 
     public function testAppInitReturnsAppInstance()
     {
-        $this->assertEquals($this->app instanceof \Gbili\Miner\Application\Application, true);
+        $this->assertEquals(true, $this->app instanceof \Gbili\Miner\Application\Application);
+    }
+
+    public function testAppHasFlowEvaluator()
+    {
+        $this->assertEquals(true, $this->app->getFlowEvaluator() instanceof \Gbili\Miner\Application\FlowEvaluator);
     }
 
     public function testAppCanBeRun()

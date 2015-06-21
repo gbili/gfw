@@ -17,7 +17,9 @@ class ArrayBlueprintTest extends \Gbili\Tests\GbiliTestCase
         $this->rootSecondChildsFirstChildId = 'get inner pages contents';
 
         $config = array(
-            'blueprint_type'              => 'array',
+            'blueprint'                   => array(
+                'type' => 'array',
+            ),
             'host'                        => 'shopstarbuzz.com',
             'exect_time_limit'            => 86400,
             'execution_allowed_fails_max_count' => 2,
@@ -33,36 +35,38 @@ class ArrayBlueprintTest extends \Gbili\Tests\GbiliTestCase
                     'Lexer'           => '\Gbili\Tests\Miner\SomeLexer',
                  ),
             ),
-            'action_set' => array(
-                $this->rootActionId => array(
-                    'type' => 'GetContents',
-                    'data' => 'http://somedomain.com',
-                    'description' => 'retrieve the website contents from the web',
+            'action' => array(
+                'rules' => array(
+                    $this->rootActionId => array(
+                        'type' => 'GetContents',
+                        'data' => 'http://somedomain.com',
+                        'description' => 'retrieve the website contents from the web',
+                    ),
+                    $this->rootFirstChildId => array(
+                        'parent' => $this->rootActionId,
+                        'type' => 'Extract',
+                        'data' => '#<title>(?P<title>[^<]+)</title>#ig',
+                        'spit_group' => array('title'),
+                        'description' => 'get the title',
+                    ),
+                    $this->rootSecondChildId => array(
+                        'parent' => $this->rootActionId,
+                        'type' => 'Extract',
+                        'match_all' => true,
+                        'data' => '#<a.+?href="(?P<link>[^"]+)"#ig',
+                        'spit_group' => array('link'),
+                    ),
+                    $this->rootSecondChildsFirstChildId => array(
+                        'type' => 'GetContents',
+                        'new_instance_generating_point' => true,
+                        'parent' => $this->rootSecondChildId,
+                        'parent_input_group' => 'link',
+                    ),
                 ),
-                $this->rootFirstChildId => array(
-                    'parent' => $this->rootActionId,
-                    'type' => 'Extract',
-                    'data' => '#<title>(?P<title>[^<]+)</title>#ig',
-                    'spit_group' => array('title'),
-                    'description' => 'get the title',
+                'listeners' => array(
+                    array($this->rootFirstChildId, 'execute.post', 'strtoupper', 1),
+                    array($this->rootFirstChildId, 'execute.post', 'strtolower', 2),
                 ),
-                $this->rootSecondChildId => array(
-                    'parent' => $this->rootActionId,
-                    'type' => 'Extract',
-                    'match_all' => true,
-                    'data' => '#<a.+?href="(?P<link>[^"]+)"#ig',
-                    'spit_group' => array('link'),
-                ),
-                $this->rootSecondChildsFirstChildId => array(
-                    'type' => 'GetContents',
-                    'new_instance_generating_point' => true,
-                    'parent' => $this->rootSecondChildId,
-                    'parent_input_group' => 'link',
-                ),
-            ),
-            'listeners' => array(
-                array($this->rootFirstChildId, 'execute.post', 'strtoupper', 1),
-                array($this->rootFirstChildId, 'execute.post', 'strtolower', 2),
             ),
         );
         $serviceManager = new \Zend\ServiceManager\ServiceManager(new \Gbili\Miner\Service\ServiceManagerConfig($config['service_manager']));

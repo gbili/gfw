@@ -127,7 +127,7 @@ class InputGetter
      * by its id
      * attach(actionId, eventName, callback, priority)
      */
-    protected function setEventManagerIdentifiers()
+    protected function loadEventManagerIdentifiers()
     {
         if (null === $this->id) {
             throw new \Exception('Make sure you set the id before calling this');
@@ -135,11 +135,11 @@ class InputGetter
         $fullSubclass = get_class($this);
         $subclassnameParts = explode('\\', $fullSubclass);
         $subclassname = end($subclassnameParts);
-        $this->eventIdentifier = [
+        $this->eventIdentifiers = [
             $this->getId(), //"some id with spaces ok"
             implode('.', [$subclassname, $this->getId()]), //"Extract.some id with spaces ok"
         ];
-        $this->getEventManager()->addIdentifiers($this->eventIdentifier);
+        $this->getEventManager()->addIdentifiers($this->eventIdentifiers);
     }
 	
 	/**
@@ -150,7 +150,7 @@ class InputGetter
 	public function setId($id)
 	{
 		$this->id = $id;
-        $this->setEventManagerIdentifiers();
+        $this->loadEventManagerIdentifiers();
         return $this;
 	}
 	

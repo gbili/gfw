@@ -11,7 +11,6 @@ class GetContents
 extends AbstractAction
 implements \Gbili\Miner\ContentsFetcherAggregateAwareInterface
 {
-
     /**
      * @var \Gbili\Miner\Blueprint\Action\GetContents\ContentsInterface the class responsible for getting the contents
      */

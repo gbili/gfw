@@ -14,9 +14,12 @@ class SharedEventManagerFactory implements \Zend\ServiceManager\FactoryInterface
         $sharedEvents = new \Zend\EventManager\SharedEventManager;
 
         $config = $this->serviceManager->get('ApplicationConfig');
-        if (isset($config['listeners'])) {
-            $listeners = $this->uniformizeListenersConfigArray($config['listeners']);
-            $this->attachListenersProvidedAsCallParams($listeners, $sharedEvents);
+
+        $sk = new \Gbili\Stdlib\SwappableKeys;
+        $actionListeners = $sk->get(['action', 'listeners'], $config, array());
+        if (!empty($actionListeners)) {
+            $actionListeners = $this->uniformizeListenersConfigArray($actionListeners);
+            $this->attachListenersProvidedAsCallParams($actionListeners, $sharedEvents);
         }
         return $sharedEvents;
     }

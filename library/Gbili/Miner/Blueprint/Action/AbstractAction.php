@@ -10,9 +10,7 @@ namespace Gbili\Miner\Blueprint\Action;
  * what, and will make the final results (if there is any)
  * be available from the public method spit().
  * 
- * 
  * @author gui
- *
  */
 abstract class AbstractAction
 implements \Zend\EventManager\EventManagerAwareInterface
@@ -25,7 +23,7 @@ implements \Zend\EventManager\EventManagerAwareInterface
     /**
      * @var array used to identify the eventis in shared events
      */
-    protected $eventIdentifier;
+    protected $eventIdentifiers;
 
     /**
      * Needed in extract action for input group
@@ -150,7 +148,7 @@ implements \Zend\EventManager\EventManagerAwareInterface
      * by its id
      * attach(actionId, eventName, callback, priority)
      */
-    protected function setEventManagerIdentifiers()
+    protected function loadEventManagerIdentifiers()
     {
         if (null === $this->id) {
             throw new \Exception('Make sure you set the id before calling this');
@@ -158,11 +156,11 @@ implements \Zend\EventManager\EventManagerAwareInterface
         $fullSubclass = get_class($this);
         $subclassnameParts = explode('\\', $fullSubclass);
         $subclassname = end($subclassnameParts);
-        $this->eventIdentifier = [
+        $this->eventIdentifiers = [
             $this->getId(), //"some id with spaces ok"
             implode('.', [$subclassname, $this->getId()]), //"Extract.some id with spaces ok"
         ];
-        $this->getEventManager()->addIdentifiers($this->eventIdentifier);
+        $this->getEventManager()->addIdentifiers($this->eventIdentifiers);
     }
 	
 	/**
@@ -173,7 +171,7 @@ implements \Zend\EventManager\EventManagerAwareInterface
 	public function setId($id)
 	{
 		$this->id = $id;
-        $this->setEventManagerIdentifiers();
+        $this->loadEventManagerIdentifiers();
         return $this;
 	}
 	

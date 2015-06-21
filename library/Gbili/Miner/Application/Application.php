@@ -32,12 +32,30 @@ implements \Zend\EventManager\EventManagerAwareInterface,
     
     /**
      * 
-     * @param FlowEvaluator $thread
-     * @param array $thread
+     * @param FlowEvaluator $flowEvaluator
      */
     public function __construct(FlowEvaluator $flowEvaluator)
     {
+        $this->setFlowEvaluator($flowEvaluator);
+    }
+
+    /**
+     * 
+     * @return FlowEvaluator
+     */
+    public function getFlowEvaluator()
+    {
+        return $this->flowEvaluator;
+    }
+
+    /**
+     * @param FlowEvaluator $flowEvaluator
+     * @return Application
+     */
+    public function setFlowEvaluator(FlowEvaluator $flowEvaluator)
+    {
         $this->flowEvaluator = $flowEvaluator;
+        return $this;
     }
     
     /**
@@ -61,8 +79,9 @@ implements \Zend\EventManager\EventManagerAwareInterface,
      */
     public static function init($configuration = array())
     {
+        $swappableKeys = new \Gbili\Stdlib\SwappableKeys;
         $smConfig       = isset($configuration['service_manager']) ? $configuration['service_manager'] : array();
-        $appListeners      = isset($configuration['application']['listeners']) ? $configuration['application']['listeners'] : array();
+        $appListeners      = $swappableKeys->get(['listeners', 'application'], $configuration, array());
         $serviceManager = new \Zend\ServiceManager\ServiceManager(new \Gbili\Miner\Service\ServiceManagerConfig($smConfig));
         $serviceManager->setService('ApplicationConfig', $configuration);
         

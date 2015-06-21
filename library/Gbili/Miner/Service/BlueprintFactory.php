@@ -12,11 +12,11 @@ class BlueprintFactory implements \Zend\ServiceManager\FactoryInterface
     public function createService(\Zend\ServiceManager\ServiceLocatorInterface $sm)
     { 
         $config = $sm->get('ApplicationConfig');
-        $blueprintType = (isset($config['blueprint_type']) && $config['blueprint_type'] === 'array')
+        $blueprintType = (isset($config['blueprint']['type']) && $config['blueprint']['type'] === 'array')
             ? 'ArrayBlueprint' 
             : 'DbReqBlueprint';
-        $blueprintClass = isset($config['blueprint_class'])
-            ? $config['blueprint_class'] 
+        $blueprintClass = isset($config['blueprint']['class'])
+            ? $config['blueprint']['class'] 
             : '\Gbili\Miner\Blueprint\\' . $blueprintType;
         return $sm->get($blueprintClass);
     }

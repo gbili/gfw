@@ -36,7 +36,9 @@ class ApplicationTest extends \Gbili\Tests\GbiliTestCase
                     ),
                 ),
             ),
-            'blueprint_type'              => 'db_req',
+            'blueprint'                   => array(
+                'type' => 'db_req',
+            ),
             'host'                        => 'http://somedomain.com',
             'exect_time_limit'            => 86400,
             'execution_allowed_fails_max_count' => 2,
