@@ -701,7 +701,7 @@ implements \Zend\EventManager\EventManagerAwareInterface
 	    $str  = "Action Type : {$class}\n";
 	    $str .= "Id          : {$this->getId()}\n";
 	    $str .= "Title       : {$this->getTitle()}\n";
-	    $str .= "Optional    : $optional\n";
+	    $str .= "Optional    : {$optional}\n";
 	    $str .= "Input       : {$this->getInput()}\n";
 	    return $str;
 	}

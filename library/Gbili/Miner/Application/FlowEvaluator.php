@@ -20,11 +20,17 @@ class FlowEvaluator
         $this->setThread($t);
     }
 
+    /**
+     *
+     */
     public function getThread()
     {
         return $this->thread;
     }
 
+    /**
+     *
+     */
     public function setThread(Thread $t)
     {
         $this->thread = $t;
@@ -77,6 +83,7 @@ class FlowEvaluator
     }
 
     /**
+     *
      * @return boolean action execution success:true or fail:false 
      */
     public function executeActionInFlow()
@@ -140,14 +147,24 @@ class FlowEvaluator
         $this->thread->placeSameAction();//Aka execute next result
         return $this->updateCanExecuteActionInFlow(true);
     }
-    
+
+    /**
+     * When the flow evaluator evaluate() method cannot find
+     * an executable action, attemptResume() will determine
+     * if it is because the script has reached an end.
+     * Otherwise it will skip the action's branch and retake
+     * flow from parent
+     * @return bool whether an executable action was placed
+     * into flow.
+     */
     public function attemptResume()
     {
         $action = $this->getActionInFlow();
         if ($action->isRoot() && !$action->hasMoreResults()) {
             return false; // Reached end of script, nothing else left to do
         }
-        //@todo but what happens if for example it is a connection problem for get contents? those errors should be managed differently no?
+        //@todo but what happens if for example it is a connection problem
+        //for get contents? shouldn't those errors should be managed differently?
         $this->thread->retakeFlowFromParent();
         return $this->evaluate();
     }

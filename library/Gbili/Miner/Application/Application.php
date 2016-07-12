@@ -79,16 +79,16 @@ implements \Zend\EventManager\EventManagerAwareInterface,
      */
     public static function init($configuration = array())
     {
-        $swappableKeys = new \Gbili\Stdlib\SwappableKeys;
         $smConfig       = isset($configuration['service_manager']) ? $configuration['service_manager'] : array();
-        $appListeners      = $swappableKeys->get(['listeners', 'application'], $configuration, array());
         $serviceManager = new \Zend\ServiceManager\ServiceManager(new \Gbili\Miner\Service\ServiceManagerConfig($smConfig));
         $serviceManager->setService('ApplicationConfig', $configuration);
         
         // By calling engine and flow handler we make all services available
-
+        $sk = new \Gbili\Stdlib\SwappableKeys;
         $application = $serviceManager->get('Application');
-        $application->addListeners($appListeners);
+        $application->addListeners(
+            $sk->get(['application', 'listeners'], $configuration, array())
+        );
         //$serviceManager->get('Persistance');
         
         // Then we can easily attach all listeners without fearing circular
@@ -144,13 +144,14 @@ implements \Zend\EventManager\EventManagerAwareInterface,
      */
     public function run()
     {
+        $this->triggerEvent([__FUNCTION__, 'begin']);
+
         do {
             $this->executeAction();
-        } while (
-            ($foundExecutableAction = $this->flowEvaluator->evaluate()) 
-            || $this->manageNotFoundExecutableAction()
-        );
-        $this->triggerEvent('enOfScript');
+        } while (($foundExecutableAction = $this->flowEvaluator->evaluate()) 
+               || $this->manageNotFoundExecutableAction());
+
+        $this->triggerEvent([__FUNCTION__, 'end']);
     }
     
     /**
@@ -168,14 +169,14 @@ implements \Zend\EventManager\EventManagerAwareInterface,
      */
     protected function executeAction()
     {
-        $this->triggerEvent(    __FUNCTION__ . '.pre');
+        $this->triggerEvent(    [__FUNCTION__, 'pre']);
         if ($this->flowEvaluator->executeActionInFlow()) {
-            $this->triggerEvent(__FUNCTION__ . '.success');
+            $this->triggerEvent([__FUNCTION__, 'success']);
             $this->manageExecutedAction();
         } else {
-            $this->triggerEvent(__FUNCTION__ . '.fail');
+            $this->triggerEvent([__FUNCTION__, 'fail']);
         }
-        $this->triggerEvent(    __FUNCTION__ . '.post');
+        $this->triggerEvent(    [__FUNCTION__, 'post']);
     }
     
     /**
@@ -184,10 +185,10 @@ implements \Zend\EventManager\EventManagerAwareInterface,
     protected function manageExecutedAction()
     {
         $action = $this->flowEvaluator->getActionInFlow();
-        $this->triggerEvent(__FUNCTION__ . '.executed');
+        $this->triggerEvent([__FUNCTION__, 'executed']);
         if ($action->hasFinalResults()) {
             $params = array('results' => $action->spit());
-            $this->triggerEvent(__FUNCTION__ . '.hasFinalResults', $params);
+            $this->triggerEvent([__FUNCTION__, 'hasFinalResults'], $params);
         }
     }
     
@@ -205,18 +206,25 @@ implements \Zend\EventManager\EventManagerAwareInterface,
      */
     public function manageNotFoundExecutableAction()
     {
-        $responses = $this->triggerEvent(__FUNCTION__ . '.normalAction');
+        $responses = $this->triggerEvent([__FUNCTION__, 'normalAction']);
         return !$responses->stopped() && $this->flowEvaluator->attemptResume();
     }
     
     /**
      * 
-     * @param string $event
+     * @param mixed:string|array $event string like : some.event.here
+     * or some array like: [some, event, here]
      * @param array $params
      */
     protected function triggerEvent($event, $params=array())
     {
-        return $this->getEventManager()->trigger($event, $this, $this->getParams($params));
+        if (is_string($event)) {
+            $event = [$event];
+        } else if (!is_array($event)) {
+            throw new \Exception('Bad param $event, expecting string or array');
+        }
+        array_unshift($event, 'application');
+        return $this->getEventManager()->trigger(implode('.', $event), $this, $this->getParams($params));
     }
     
     /**

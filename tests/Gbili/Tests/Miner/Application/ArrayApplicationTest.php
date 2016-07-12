@@ -84,10 +84,6 @@ class ArrayApplicationTest extends \Gbili\Tests\GbiliTestCase
                     ),
                 ),
                 'listeners' => array(
-                    /*'application' => array(
-                        array('manageFail.normalAction', 'DumpActionId', 100),
-                        array('executeAction.success', 'ActionSuccess', 100),
-                    ),*/
                     //@TODO make sure these listeners get hooked to the right actions
                     //either through shared event manager or with some id checking etc.
                     //Way 1 to add listeners
@@ -107,6 +103,16 @@ class ArrayApplicationTest extends \Gbili\Tests\GbiliTestCase
                     array($this->rootSecondChildsFirstChildId, 'execute.post', 'LoggerVarDump', 2),
                     array($this->rootSecondChildsFirstChildId, 'hasMoreResults', 'LoggerVarDump', 2),
                     array($this->rootSecondChildsFirstChildId, 'executeInput', 'LoggerVarDump', 2),
+                ),
+            ),
+            'listeners' => array(
+                'application' => array(
+                    array('executeAction.success', 'LoggerVarDump', 100),
+                ),
+            ),
+            'application' => array(
+                'listeners' => array(
+                    array('manageFail.normalAction', 'LoggerVarDump', 100),
                 ),
             ),
         );
@@ -134,7 +140,7 @@ class ArrayApplicationTest extends \Gbili\Tests\GbiliTestCase
         $this->assertEquals(true, $this->app->getFlowEvaluator() instanceof \Gbili\Miner\Application\FlowEvaluator);
     }
 
-    public function testAppCanBeRun()
+    public function testAppCanRun()
     {
         $this->app->run();
     }
